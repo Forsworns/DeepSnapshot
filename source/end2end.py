@@ -13,6 +13,8 @@ class End2end(nn.Module):
             if type(updater) is not tuple:
                 layers.append(updater)
                 layers.append(denoiser)
+            else:
+                pass
 
         self.end2end = nn.Sequential(*layers)
 
