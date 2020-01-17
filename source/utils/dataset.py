@@ -1,7 +1,7 @@
 import torch
 import scipy.io as sio
 import h5py
-
+from torch.utils.data import Dataset
 
 def measure(img, phi):
     return torch.cumsum(phi.mul(img), 3)
@@ -62,7 +62,7 @@ def load_test_data(test_file, mask_file, mat73=False):
         test_data = h5py.File(test_file)
         test_label = np.transpose(test_data['labels'], [3, 2, 1, 0])
     else:
-        test_data = sio.loadmat(testFile)
+        test_data = sio.loadmat(test_file)
         test_label = test_data['labels']
 
     mask_data = sio.loadmat(mask_file)

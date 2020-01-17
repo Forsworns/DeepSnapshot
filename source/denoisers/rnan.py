@@ -1,5 +1,5 @@
 import torch.nn as nn
-from modules import default_conv, NLResGroup, ResGroup
+from denoisers.modules import default_conv, NLResGroup, ResGroup
 
 
 class RNAN(nn.Module):

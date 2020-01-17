@@ -4,7 +4,8 @@ from time import time
 from skimage.measure import compare_ssim, compare_psnr
 import utils.configs as cfg
 import utils.util as util
-from denoisers.denoisers import get_denoiser
+import utils.dataset as ds
+from denoisers import get_denoiser
 from iterative import Iterative
 from end2end import End2end
 import torch
@@ -34,7 +35,7 @@ if __name__ == "__main__":
         description="Trainer Parameters",
         prog="python ./train.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_denoiser,
+    parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)
@@ -55,7 +56,7 @@ if __name__ == "__main__":
         args.name)
 
     label, phi = ds.load_test_data(test_file, mask_file)
-    show_tensor(label)
+    util.show_tensor(label)
 
     y = np.sum(np.multiply(label, phi), axis=3)
     x = np.tile(np.reshape(np.multiply(yinput, sumPhi),

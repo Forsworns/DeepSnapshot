@@ -2,7 +2,7 @@
 import argparse
 from time import time
 from skimage.measure import compare_ssim, compare_psnr
-from denoisers.denoiers import get_denoiser
+from denoisers import get_denoiser
 import utils.configs as cfg
 import utils.util as util
 import utils.dataset as ds

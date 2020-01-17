@@ -12,12 +12,12 @@ def general(name):
     para_dir = root_dir + 'results/parameter/Para%s%d' % (name, pixel)
     recon_dir = root_dir + 'results/reconstruction/Img%s%d' % (name, pixel)
     model_dir = root_dir + 'results/model/Model%s%d' % (name, pixel)
-    if not os.path.exist(para_dir):
-        os.path.makedirs(para_dir)
-    if not os.path.exist(recon_dir):
-        os.path.makedirs(recon_dir)
-    if not os.path.exist(model_dir):
-        os.path.makedirs(model_dir)
+    if not os.path.exists(para_dir):
+        os.makedirs(para_dir)
+    if not os.path.exists(recon_dir):
+        os.makedirs(recon_dir)
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
     return train_file, test_file, mask_file, para_dir, recon_dir, model_dir
 
 

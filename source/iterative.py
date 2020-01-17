@@ -1,5 +1,5 @@
-from models.models import get_denoiser
-from optimizers.algorithms import get_updater
+from denoisers import get_denoiser
+from updaters import get_updater
 import torch.nn as nn
 
 
