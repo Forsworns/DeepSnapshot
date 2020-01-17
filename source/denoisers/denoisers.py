@@ -15,5 +15,4 @@ def get_denoiser(name, in_channels, out_channels, **kwargs):
     if name == 'convolution':
         return SingleConvolution(in_channels, out_channels, kwargs['width'])
     if name == 'sparse':
-        return SparseNet(in_channels,out_channels)
-
+        return SparseNet(in_channels, out_channels)

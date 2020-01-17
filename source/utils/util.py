@@ -1,74 +1,33 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torch.optim import Adam
+from torch.nn import MSELoss, L1Loss
 from torch.utils.data import Dataset
-import torch
 from numpy import clip, exp
 import matplotlib.pyplot as plt
-import scipy.io as sio
-import h5py
+from time import time
 
-# get measurement
-def measure(img,phi):
-    return torch.cumsum(phi.mul(img),3)
 
-class SnapshotDataset(Dataset):
-    def __init__(self, phi, imgs, mode='train'):
-        self.phi = phi
-        self.imgs = imgs
-        self.mode = mode
-        
-    def __len__(self):
-        return len(self.imgs)
-    
-    def __getitem__(self, index):
-        img = self.imgs[index]
-        return img, measure(img,self.phi)
+def save_model(model, dir, psnr):
+    torch.save(model.state_dict(), "{}/{}-{}".format(dir, psnr, time()))
 
-# Load training data
-def load_train_data(trainFile,maskFile,mat73=False):
-    if mat73 == True:                                                # if .mat file is too big, use h5py to load
-        trainData = h5py.File(trainFile)
-        trainLabel = np.transpose(trainData['labels'], [3, 2, 1, 0])
-    else:
-        trainData = sio.loadmat(trainFile)
-        trainLabel = trainData['labels']                             # labels
 
-    maskData = sio.loadmat(maskFile)
-    phi = maskData['phi']                                            # mask
+def get_optimizer(o_name, params, lr):
+    if o_name == 'adam':
+        return Adam(params, lr)
 
-    del trainData, maskData
-    return torch.from_numpy(trainLabel), torch.from_numpy(phi)
 
-# Load testing data
-def load_test_data(testFile,maskFile,mat73=False):
-    if mat73 == True:
-        testData = h5py.File(testFile)
-        testLabel = np.transpose(testData['labels'], [3, 2, 1, 0])
-    else:
-        testData = sio.loadmat(testFile)
-        testLabel = testData['labels']
-    
-    maskData = sio.loadmat(maskFile)
-    phi = maskData['phi']
+def get_loss(l_name):
+    if l_name == 'mse':
+        return MSELoss()
+    elif l_name == 'l1':
+        return L1Loss()
 
-    del testData, maskData
-    return torch.from_numpy(testLabel), torch.from_numpy(phi)
-
-# Initialize data for end2end network
-def initialize(phi, with_gt=True):
-    x0 = torch.zeros(np.float32, [None, pixel, pixel, nFrame])      
-    y = torch.zeros(np.float32, [None, pixel, pixel, 1])           
-    Phi = phi
-    PhiT = torch.from_numpy(Phi.T)
-    if with_gt:
-        x_gt = (np.float32, [None, pixel, pixel, nFrame])    # ground truth
-        return x0, Phi, PhiT, y, x_gt
-    else:
-        return x0, Phi, PhiT, y
 
 def expand(x, r):
-    return np.repeat(np.repeat(x, r, axis = 0), r, axis = 1)
+    return np.repeat(np.repeat(x, r, axis=0), r, axis=1)
+
 
 def show_tensor(tensor, cmap='magma', scale=False):
     im = tensor.numpy()
@@ -102,7 +61,8 @@ def plot_tensors(tensor_list, titles=None):
     color = True if tensor_list[0].shape[1] == 3 else False
     image_list = [tensor_to_numpy(tensor) for tensor in tensor_list]
     width = len(image_list)
-    fig, ax = plt.subplots(1, width, sharex='col', sharey='row', figsize=(width * 4, 4))
+    fig, ax = plt.subplots(1, width, sharex='col',
+                           sharey='row', figsize=(width * 4, 4))
 
     for i in range(width):
         if image_list[i].ndim == 2:
@@ -114,6 +74,7 @@ def plot_tensors(tensor_list, titles=None):
         ax[i].get_xaxis().set_ticks([])
         ax[i].get_yaxis().set_ticks([])
     fig
+
 
 def show_data(datapt):
     # For datasets of the form (noise1, noise2, ground truth), shows all three concatenated
@@ -134,8 +95,10 @@ def plot_grid(images, height, width, **kwargs):
         kwargs['cmap'] = 'Greys_r'
 
     images = images[:width * height]
-    fig, ax = plt.subplots(height, width, sharex='col', sharey='row', figsize=(width * 4, height * 4))
-    image_grid = images.reshape(height, width, images.shape[1], images.shape[2])
+    fig, ax = plt.subplots(height, width, sharex='col',
+                           sharey='row', figsize=(width * 4, height * 4))
+    image_grid = images.reshape(
+        height, width, images.shape[1], images.shape[2])
 
     # axes are in a two-dimensional array, indexed by [row, col]
     for i in range(height):
@@ -150,11 +113,13 @@ def plot_grid(images, height, width, **kwargs):
                 ax[j].get_yaxis().set_ticks([])
     fig
 
+
 def show(image, **kwargs):
     import matplotlib.pyplot as plt
     plt.imshow(image, cmap=plt.cm.gray, **kwargs)
     plt.gca().get_xaxis().set_ticks([])
     plt.gca().get_yaxis().set_ticks([])
+
 
 def plot_images(image_list, **kwargs):
     images = np.concatenate([im[np.newaxis] for im in image_list])
@@ -177,7 +142,8 @@ def random_noise(img, params):
     noisy = img
 
     if params['mode'] == 'poisson' or params['mode'] == 'gaussian_poisson':
-        noisy = torch.poisson(noisy * params['photons_at_max']) / params['photons_at_max']
+        noisy = torch.poisson(
+            noisy * params['photons_at_max']) / params['photons_at_max']
 
     if params['mode'] == 'gaussian' or params['mode'] == 'gaussian_poisson':
         noise = torch.randn(img.size()).to(img.device) * params['std']
@@ -261,14 +227,17 @@ def mse(x, y, pad=None, rescale=False):
 
 
 def gaussian(window_size, sigma):
-    gauss = torch.Tensor([exp(-(x - window_size // 2) ** 2 / float(2 * sigma ** 2)) for x in range(window_size)])
+    gauss = torch.Tensor([exp(-(x - window_size // 2) ** 2 /
+                              float(2 * sigma ** 2)) for x in range(window_size)])
     return gauss / gauss.sum()
 
 
 def create_window(window_size, channel):
     _1D_window = gaussian(window_size, 1.5).unsqueeze(1)
-    _2D_window = _1D_window.mm(_1D_window.t()).float().unsqueeze(0).unsqueeze(0)
-    window = _2D_window.expand(channel, 1, window_size, window_size).contiguous()
+    _2D_window = _1D_window.mm(
+        _1D_window.t()).float().unsqueeze(0).unsqueeze(0)
+    window = _2D_window.expand(
+        channel, 1, window_size, window_size).contiguous()
     return window
 
 
@@ -280,14 +249,18 @@ def _ssim(img1, img2, window, window_size, channel, size_average=True):
     mu2_sq = mu2.pow(2)
     mu1_mu2 = mu1 * mu2
 
-    sigma1_sq = F.conv2d(img1 * img1, window, padding=window_size // 2, groups=channel) - mu1_sq
-    sigma2_sq = F.conv2d(img2 * img2, window, padding=window_size // 2, groups=channel) - mu2_sq
-    sigma12 = F.conv2d(img1 * img2, window, padding=window_size // 2, groups=channel) - mu1_mu2
+    sigma1_sq = F.conv2d(img1 * img1, window,
+                         padding=window_size // 2, groups=channel) - mu1_sq
+    sigma2_sq = F.conv2d(img2 * img2, window,
+                         padding=window_size // 2, groups=channel) - mu2_sq
+    sigma12 = F.conv2d(img1 * img2, window,
+                       padding=window_size // 2, groups=channel) - mu1_mu2
 
     C1 = 0.01 ** 2
     C2 = 0.03 ** 2
 
-    ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
+    ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / \
+        ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
 
     if size_average:
         return ssim_map.mean()
@@ -312,7 +285,8 @@ def smooth(tensor):
     kernel = torch.Tensor(kernel).to(tensor.device)
     kernel = kernel / kernel.sum()
 
-    filtered_tensor = torch.nn.functional.conv2d(tensor, kernel, stride=1, padding=1)
+    filtered_tensor = torch.nn.functional.conv2d(
+        tensor, kernel, stride=1, padding=1)
     return filtered_tensor
 
 
@@ -373,8 +347,10 @@ class PercentileNormalizer():
         Note that percentiles are computed individually for each channel (if present in `axes`).
         """
         axes = tuple((d for d in range(img.ndim) if d != channel))
-        self.mi = np.percentile(img, self.pmin, axis=axes, keepdims=True).astype(self.dtype, copy=False)
-        self.ma = np.percentile(img, self.pmax, axis=axes, keepdims=True).astype(self.dtype, copy=False)
+        self.mi = np.percentile(img, self.pmin, axis=axes, keepdims=True).astype(
+            self.dtype, copy=False)
+        self.ma = np.percentile(img, self.pmax, axis=axes, keepdims=True).astype(
+            self.dtype, copy=False)
         return normalize_mi_ma(img, self.mi, self.ma, dtype=self.dtype, **self.kwargs)
 
     def denormalize(self, mean):
@@ -402,7 +378,8 @@ def test_percentile_normalizer():
 
 def gpuinfo(gpuid):
     import subprocess
-    sp = subprocess.Popen(['nvidia-smi', '-q', '-i', str(gpuid), '-d', 'MEMORY'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    sp = subprocess.Popen(['nvidia-smi', '-q', '-i', str(gpuid), '-d',
+                           'MEMORY'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out_str = sp.communicate()
     out_list = out_str[0].decode("utf-8").split('BAR1', 1)[0].split('\n')
     out_dict = {}
@@ -444,4 +421,3 @@ def get_args():
                         type=str,
                         required=True)
     args = parser.parse_args()
-

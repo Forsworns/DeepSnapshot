@@ -1,7 +1,8 @@
 from optimizers.fista import Fista
-from optimizers.gap import Gap 
+from optimizers.gap import Gap
 from optimizers.admm import Admm
-from optimizers.amp import Amp 
+from optimizers.amp import Amp
+
 
 def get_updater(name):
     if name == 'fista':

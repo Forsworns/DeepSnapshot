@@ -7,7 +7,7 @@ class Masker():
 
     def __init__(self, width=3, mode='zero', infer_single_pass=False, include_mask_as_input=False):
         self.grid_size = width
-        self.n_masks = width ** 2 # to iterate every pixel in the mask patches
+        self.n_masks = width ** 2  # to iterate every pixel in the mask patches
 
         self.mode = mode
         self.infer_single_pass = infer_single_pass
@@ -27,9 +27,10 @@ class Masker():
             masked = X * mask_inv
         else:
             raise NotImplementedError
-            
+
         if self.include_mask_as_input:
-            net_input = torch.cat((masked, mask.repeat(X.shape[0], 1, 1, 1)), dim=1)
+            net_input = torch.cat(
+                (masked, mask.repeat(X.shape[0], 1, 1, 1)), dim=1)
         else:
             net_input = masked
 
@@ -41,7 +42,8 @@ class Masker():
     def infer_full_image(self, X, model):
         if self.infer_single_pass:
             if self.include_mask_as_input:
-                net_input = torch.cat((X, torch.zeros(X[:, 0:1].shape).to(X.device)), dim=1)
+                net_input = torch.cat(
+                    (X, torch.zeros(X[:, 0:1].shape).to(X.device)), dim=1)
             else:
                 net_input = X
             net_output = model(net_input)
@@ -80,6 +82,7 @@ def interpolate_mask(tensor, mask, mask_inv):
     kernel = torch.Tensor(kernel).to(device)
     kernel = kernel / kernel.sum()
 
-    filtered_tensor = torch.nn.functional.conv2d(tensor, kernel, stride=1, padding=1)
+    filtered_tensor = torch.nn.functional.conv2d(
+        tensor, kernel, stride=1, padding=1)
 
     return filtered_tensor * mask + tensor * mask_inv

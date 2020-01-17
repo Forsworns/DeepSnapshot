@@ -1,6 +1,7 @@
 import torch.nn as nn
 from torch import cat
 
+
 class SingleConvolution(nn.Module):
     def __init__(self, n_channel_in=1, n_channel_out=1, width=3, torus=False):
         super(SingleConvolution, self).__init__()
@@ -9,9 +10,11 @@ class SingleConvolution(nn.Module):
 
         if self.torus:
             self.pad = width // 2
-            self.conv = nn.Conv2d(n_channel_in, n_channel_out, kernel_size=width, padding=0)
+            self.conv = nn.Conv2d(
+                n_channel_in, n_channel_out, kernel_size=width, padding=0)
         else:
-            self.conv = nn.Conv2d(n_channel_in, n_channel_out, kernel_size=width, padding=width // 2)
+            self.conv = nn.Conv2d(
+                n_channel_in, n_channel_out, kernel_size=width, padding=width // 2)
 
     def forward(self, x):
         if self.torus:
@@ -19,6 +22,7 @@ class SingleConvolution(nn.Module):
             return self.conv(x)
         else:
             return self.conv(x)
+
 
 def pad_circular(x, pad):
     """

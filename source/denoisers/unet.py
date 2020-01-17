@@ -24,8 +24,10 @@ class Unet(nn.Module):
         elif down == 'conv':
             self.down1 = nn.Conv2d(32, 32, kernel_size=2, stride=2, groups=32)
             self.down2 = nn.Conv2d(64, 64, kernel_size=2, stride=2, groups=64)
-            self.down3 = nn.Conv2d(128, 128, kernel_size=2, stride=2, groups=128)
-            self.down4 = nn.Conv2d(256, 256, kernel_size=2, stride=2, groups=256)
+            self.down3 = nn.Conv2d(
+                128, 128, kernel_size=2, stride=2, groups=128)
+            self.down4 = nn.Conv2d(
+                256, 256, kernel_size=2, stride=2, groups=256)
 
             self.down1.weight.data = 0.01 * self.down1.weight.data + 0.25
             self.down2.weight.data = 0.01 * self.down2.weight.data + 0.25
@@ -38,15 +40,23 @@ class Unet(nn.Module):
             self.down4.bias.data = 0.01 * self.down4.bias.data + 0
 
         if up == 'bilinear' or up == 'nearest':
-            self.up1 = lambda x: nn.functional.interpolate(x, mode=up, scale_factor=2)
-            self.up2 = lambda x: nn.functional.interpolate(x, mode=up, scale_factor=2)
-            self.up3 = lambda x: nn.functional.interpolate(x, mode=up, scale_factor=2)
-            self.up4 = lambda x: nn.functional.interpolate(x, mode=up, scale_factor=2)
+            self.up1 = lambda x: nn.functional.interpolate(
+                x, mode=up, scale_factor=2)
+            self.up2 = lambda x: nn.functional.interpolate(
+                x, mode=up, scale_factor=2)
+            self.up3 = lambda x: nn.functional.interpolate(
+                x, mode=up, scale_factor=2)
+            self.up4 = lambda x: nn.functional.interpolate(
+                x, mode=up, scale_factor=2)
         elif up == 'tconv':
-            self.up1 = nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2, groups=256)
-            self.up2 = nn.ConvTranspose2d(128, 128, kernel_size=2, stride=2, groups=128)
-            self.up3 = nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, groups=64)
-            self.up4 = nn.ConvTranspose2d(32, 32, kernel_size=2, stride=2, groups=32)
+            self.up1 = nn.ConvTranspose2d(
+                256, 256, kernel_size=2, stride=2, groups=256)
+            self.up2 = nn.ConvTranspose2d(
+                128, 128, kernel_size=2, stride=2, groups=128)
+            self.up3 = nn.ConvTranspose2d(
+                64, 64, kernel_size=2, stride=2, groups=64)
+            self.up4 = nn.ConvTranspose2d(
+                32, 32, kernel_size=2, stride=2, groups=32)
 
             self.up1.weight.data = 0.01 * self.up1.weight.data + 0.25
             self.up2.weight.data = 0.01 * self.up2.weight.data + 0.25
@@ -71,7 +81,8 @@ class Unet(nn.Module):
         self.conv9 = ConvBlock(2 * 32, n_channel_out, residual, activation)
 
         if self.residual:
-            self.convres = ConvBlock(n_channel_in, n_channel_out, residual, activation)
+            self.convres = ConvBlock(
+                n_channel_in, n_channel_out, residual, activation)
 
     def forward(self, x):
         c0 = x
