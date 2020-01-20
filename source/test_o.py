@@ -2,12 +2,12 @@
 import argparse
 from time import time
 from skimage.measure import compare_ssim, compare_psnr
-from denoisers.denoisers import get_denoiser
-from updaters.updaters import get_updater
+from denoisers import get_denoiser
+from updaters import get_updater
 import utils.configs as cfg
 import utils.util as util
 import utils.dataset as ds
-from utils.mask import Makser
+from utils.mask import Masker
 from end2end import End2end
 
 
@@ -109,7 +109,7 @@ if __name__ == "__main__":
         description="Trainer Parameters",
         prog="python ./test_o.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_denoiser,
+    parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)  # e2e
@@ -126,9 +126,10 @@ if __name__ == "__main__":
 
     _, test_file, mask_file, para_dir, recon_dir, model_dir = cfg.general(
         args.name)
-
+    
     label, phi = ds.load_test_data(test_file, mask_file)
-    show_tensor(label)
+    print(label.size(),phi.size())
+    util.show_tensor(label)
 
     y = np.sum(np.multiply(label, phi), axis=3)
     x = np.tile(np.reshape(np.multiply(yinput, sumPhi),
