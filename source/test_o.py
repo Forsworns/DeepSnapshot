@@ -2,7 +2,7 @@
 import argparse
 from time import time
 from skimage.measure import compare_ssim, compare_psnr
-from denoisers.denoiers import get_denoiser
+from denoisers.denoisers import get_denoiser
 from updaters.updaters import get_updater
 import utils.configs as cfg
 import utils.util as util
@@ -74,7 +74,7 @@ def test_iterative(x, y, phi, cfg):
     best_val_loss = 1
 
     for sp in xrange(cfg.steps):
-        rec = updater(rec)
+        rec = updater(rec, denoiser)
         for ep in xrange(cfg.epoch):
             net_input, mask = masker.mask(rec, i % (masker.n_masks - 1))
             net_output = denoiser(net_input)
