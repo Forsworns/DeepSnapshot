@@ -3,9 +3,10 @@ import scipy.io as sio
 import h5py
 from torch.utils.data import Dataset
 
-def measure(img, phi):
-    return torch.cumsum(phi.mul(img), 3)
+# n x t x w x d
 
+def measure(img, phi):
+    return img.mul(phi).sum(1)
 
 class SnapshotDataset(Dataset):
     def __init__(self, phi, labels, mode='train'):
@@ -52,7 +53,7 @@ def load_train_data(train_file, mask_file, mat73=False):
     phi = mask_data['phi']                                            # mask
 
     del train_data, mask_data
-    return torch.from_numpy(train_label), torch.from_numpy(phi)
+    return torch.from_numpy(train_label).permute(0,3,1,2), torch.from_numpy(phi).permute(2,0,1)
 
 # Load testing data
 
@@ -69,4 +70,4 @@ def load_test_data(test_file, mask_file, mat73=False):
     phi = mask_data['phi']
 
     del test_data, mask_data
-    return torch.from_numpy(test_label), torch.from_numpy(phi)
+    return torch.from_numpy(test_label).permute(0,3,1,2), torch.from_numpy(phi).permute(2,0,1)

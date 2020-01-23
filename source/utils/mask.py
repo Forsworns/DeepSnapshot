@@ -5,24 +5,32 @@ import torch
 class Masker():
     """Object for masking and demasking"""
 
-    def __init__(self, width=3, mode='zero', infer_single_pass=False, include_mask_as_input=False):
+    def __init__(self, frame=8, width=3, mode='zero', infer_single_pass=False, include_mask_as_input=False, mask_3d=False):
+        self.frame = frame
         self.grid_size = width
-        self.n_masks = width ** 2  # to iterate every pixel in the mask patches
-
         self.mode = mode
         self.infer_single_pass = infer_single_pass
         self.include_mask_as_input = include_mask_as_input
+        self.mask_3d = mask_3d
+        if self.mask_3d:
+            self.n_masks = width ** 3  # to iterate every pixel in the mask patches
+        else:
+            self.n_masks = width ** 2
 
     def mask(self, X, i):
-        phasex = i % self.grid_size
-        phasey = (i // self.grid_size) % self.grid_size
-        mask = pixel_grid_mask(X[0, 0].shape, self.grid_size, phasex, phasey)
+        phase_x = i % self.grid_size
+        phase_y = (i // self.grid_size) % self.grid_size
+        if self.mask_3d: 
+            phase_t = (i // (self.grid_size*self.grid_size)) % self.grid_size
+            mask = pixel_grid_mask(X.shape, self.grid_size, phase_x, phase_y, phase_t)
+        else:
+            mask = pixel_grid_mask(X.shape, self.grid_size, phase_x, phase_y)
         mask = mask.to(X.device)
 
         mask_inv = torch.ones(mask.shape).to(X.device) - mask
 
         if self.mode == 'interpolate':
-            masked = interpolate_mask(X, mask, mask_inv)
+            masked = interpolate_mask(X, mask, mask_inv, self.frame)
         elif self.mode == 'zero':
             masked = X * mask_inv
         else:
@@ -63,22 +71,22 @@ class Masker():
             return acc_tensor
 
 
-def pixel_grid_mask(shape, patch_size, phase_x, phase_y):
-    A = torch.zeros(shape[-2:])
-    for i in range(shape[-2]):
-        for j in range(shape[-1]):
-            if (i % patch_size == phase_x and j % patch_size == phase_y):
-                A[i, j] = 1
-    return torch.Tensor(A)
+def pixel_grid_mask(shape, patch_size, phase_x, phase_y, phase_t=1):
+    A = torch.zeros(shape)
+    for i in range(shape[-3]):
+        for j in range(shape[-2]):
+            for k in range(shape[-1]):
+                if (i % patch_size == phase_t and j % patch_size == phase_x and k % patch_size == phase_y):
+                    A[..., i, j, k] = 1
+    return A
 
 
-def interpolate_mask(tensor, mask, mask_inv):
+def interpolate_mask(tensor, mask, mask_inv, channels):
     device = tensor.device
-
     mask = mask.to(device)
-
-    kernel = np.array([[0.5, 1.0, 0.5], [1.0, 0.0, 1.0], (0.5, 1.0, 0.5)])
-    kernel = kernel[np.newaxis, np.newaxis, :, :]
+    kernel = np.array([[0.5, 1.0, 0.5], [1.0, 0.0, 1.0], [0.5, 1.0, 0.5]])
+    kernel = np.tile(kernel,(channels,1,1))
+    kernel = kernel[np.newaxis, ...]
     kernel = torch.Tensor(kernel).to(device)
     kernel = kernel / kernel.sum()
 

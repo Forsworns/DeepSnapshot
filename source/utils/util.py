@@ -1,21 +1,23 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.nn import MSELoss, L1Loss
 from torch.utils.data import Dataset
 from numpy import clip, exp
 import matplotlib.pyplot as plt
-from time import time
+from time import time, sleep
 
 
 def save_model(model, dir, psnr):
     torch.save(model.state_dict(), "{}/{}-{}".format(dir, psnr, time()))
 
 
-def get_optimizer(o_name, params, lr):
+def get_optimizer(o_name, model, lr):
     if o_name == 'adam':
-        return Adam(params, lr)
+        return Adam(model.parameters(), lr)
+    elif o_name == 'sgd':
+        return SGD(model.parameters(), lr)  
 
 
 def get_loss(l_name):
@@ -29,17 +31,39 @@ def expand(x, r):
     return np.repeat(np.repeat(x, r, axis=0), r, axis=1)
 
 
-def show_tensor(tensor, cmap='magma', scale=False):
+def show_tensors(tensor, cmap='Greys_r', scale=False, titles=None):
+    # cmap: 'Greys_r','magma'
+    # tensor: n x t x w x d
     im = tensor.numpy()
     if scale:
         im = im / im.max()
     else:
         im = clip(im, 0, 1)
-
     if im.shape[0] == 1:
-        plt.imshow(im[0], cmap=cmap)
+        show_tensor(plt,im[0],cmap=cmap)
     else:
-        plt.imshow(im.transpose((1, 2, 0)))
+        amount = im.shape[0] 
+        fig, ax = plt.subplots(1, amount, sharex='col',
+                           sharey='row', figsize=(amount * 4, 4))
+
+        for i in range(amount):
+            ax[i].get_xaxis().set_ticks([])
+            ax[i].get_yaxis().set_ticks([])
+            show_tensor(ax[i],im[i],cmap)
+            if titles:
+                ax[i].set_title(titles[i])
+        fig
+    plt.show()
+
+def show_tensor(handle,tensor,cmap):
+    # tensor: t x w x d
+    if len(tensor.shape) == 2:
+        handle.imshow(tensor,cmap=cmap)
+    else:
+        for t in range(tensor.shape[0]):
+            handle.imshow(tensor[t])
+            plt.pause(0.1)
+            
 
 
 def tensor_to_numpy(x):
@@ -55,25 +79,6 @@ def tensor_to_numpy(x):
         return x.transpose((1, 2, 0))
     else:
         raise
-
-
-def plot_tensors(tensor_list, titles=None):
-    color = True if tensor_list[0].shape[1] == 3 else False
-    image_list = [tensor_to_numpy(tensor) for tensor in tensor_list]
-    width = len(image_list)
-    fig, ax = plt.subplots(1, width, sharex='col',
-                           sharey='row', figsize=(width * 4, 4))
-
-    for i in range(width):
-        if image_list[i].ndim == 2:
-            ax[i].imshow(image_list[i], cmap='Greys_r')
-        else:
-            ax[i].imshow(image_list[i])
-        if titles:
-            ax[i].set_title(titles[i])
-        ax[i].get_xaxis().set_ticks([])
-        ax[i].get_yaxis().set_ticks([])
-    fig
 
 
 def show_data(datapt):

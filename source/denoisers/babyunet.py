@@ -6,7 +6,7 @@ from denoisers.modules import ConvBlock
 
 
 class BabyUnet(nn.Module):
-    def __init__(self, n_channel_in=1, n_channel_out=1, width=16):
+    def __init__(self, channel, width=16):
         super(BabyUnet, self).__init__()
         self.pool1 = nn.MaxPool2d(kernel_size=2)
         self.pool2 = nn.MaxPool2d(kernel_size=2)
@@ -16,7 +16,7 @@ class BabyUnet(nn.Module):
         self.up2 = lambda x: F.interpolate(
             x, mode='bilinear', scale_factor=2, align_corners=False)
 
-        self.conv1 = ConvBlock(n_channel_in, width)
+        self.conv1 = ConvBlock(channel, width)
         self.conv2 = ConvBlock(width, 2*width)
 
         self.conv3 = ConvBlock(2*width, 2*width)
@@ -24,7 +24,7 @@ class BabyUnet(nn.Module):
         self.conv4 = ConvBlock(4*width, 2*width)
         self.conv5 = ConvBlock(3*width, width)
 
-        self.conv6 = nn.Conv2d(width, n_channel_out, 1)
+        self.conv6 = nn.Conv2d(width, channel, 1)
 
     def forward(self, x):
         c1 = self.conv1(x)

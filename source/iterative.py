@@ -1,4 +1,3 @@
-from denoisers import get_denoiser
 from updaters import get_updater
 import torch.nn as nn
 
@@ -10,7 +9,7 @@ class Iterative(nn.Module):
         self.denoiser = denoiser
         self.steps = steps
 
-    def forward(self, x):
-        for sp in xrange(self.steps):
-            x = updater(x)
-        return x
+    def forward(self, params):
+        for sp in range(self.steps):
+            params = updater(params)
+        return params

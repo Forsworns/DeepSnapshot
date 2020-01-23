@@ -14,7 +14,7 @@ from torch.utils.data import Dataloader
 def train_e2e(dataset, phi, cfg):
     torch.manual_seed(int(time()) % 10)
 
-    sumPhi = phi.mul(phi.T)
+    sumPhi = phi.mul(phi.t())
     model = End2end(cfg.depth, cfg.u_name, cfg.d_name, cfg.frame, cfg.frame)
     optimizer = util.get_optimizer(o_name, model, cfg.learning_rate)
     loss_func = util.get_loss(cfg.l_name)
@@ -45,7 +45,7 @@ def train_e2e(dataset, phi, cfg):
             val_loss = loss_function(net_output*mask, label*mask)
             val_losses.append(val_loss.item())
             print("(", sp, "-", ep, ") Loss: \t", round(loss.item(), 5),
-                  "\tVal Loss: \t", round(val_loss.item(), 5), "Time:\t", time.time())
+                  "\tVal Loss: \t", round(val_loss.item(), 5), "Time:\t", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -92,7 +92,7 @@ def train_denoiser(dataset, cfg):
             val_loss = loss_function(net_output*mask, label*mask)
             val_losses.append(val_loss.item())
             print("(", sp, "-", ep, ") Loss: \t", round(loss.item(), 5),
-                  "\tVal Loss: \t", round(val_loss.item(), 5), "Time:\t", time.time())
+                  "\tVal Loss: \t", round(val_loss.item(), 5), "Time:\t", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss

@@ -4,21 +4,18 @@ import torch.nn as nn
 
 
 class End2end(nn.Module):
-    def __init__(self, phase, u_name, d_name, in_channels, out_channels, **kwargs):
+    def __init__(self, phase, u_name, d_name, channels, **kwargs):
         super(End2end, self).__init__()
 
         layers = []
-        for _ in xrange(self.phase):
-            updater = get_updater(u_name)
-            denoiser = get_model(d_name, in_channels, out_channels, kwargs)
-            if type(updater) is not tuple:
-                layers.append(updater)
-                layers.append(denoiser)
-            else:
-                pass
+        for _ in range(self.phase):
+            denoiser = get_model(d_name, channels, kwargs)
+            updater = get_updater(u_name, denoiser, step_size, kwargs)
+            layers.append(updater)
 
         self.end2end = nn.Sequential(*layers)
 
-    def forward(self, x):
-        out = self.end2end(x)
-        return out
+    def forward(self, params):
+        params = self.end2end(params)
+        return params
+

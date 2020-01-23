@@ -3,7 +3,7 @@ from torch import cat
 
 
 class SingleConvolution(nn.Module):
-    def __init__(self, n_channel_in=1, n_channel_out=1, width=3, torus=False):
+    def __init__(self, channel, width=3, torus=False):
         super(SingleConvolution, self).__init__()
 
         self.torus = torus
@@ -11,10 +11,10 @@ class SingleConvolution(nn.Module):
         if self.torus:
             self.pad = width // 2
             self.conv = nn.Conv2d(
-                n_channel_in, n_channel_out, kernel_size=width, padding=0)
+                channel, channel, kernel_size=width, padding=0)
         else:
             self.conv = nn.Conv2d(
-                n_channel_in, n_channel_out, kernel_size=width, padding=width // 2)
+                channel, channel, kernel_size=width, padding=width // 2)
 
     def forward(self, x):
         if self.torus:

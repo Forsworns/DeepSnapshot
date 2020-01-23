@@ -427,31 +427,20 @@ class ConvBlock(nn.Module):
 
     def forward(self, x):
         ox = x
-
         x = self.conv1(x)
-
         if self.dropout:
             x = self.dropout1(x)
-
         if self.norm1:
             x = self.norm1(x)
-
         x = self.actfun1(x)
-
         x = self.conv2(x)
-
         if self.dropout:
             x = self.dropout2(x)
-
         if self.norm2:
             x = self.norm2(x)
-
         if self.residual:
             x[:, 0:min(ox.shape[1], x.shape[1]), :, :] += ox[:,
                                                              0:min(ox.shape[1], x.shape[1]), :, :]
-
         x = self.actfun2(x)
-
         # print("shapes: x:%s ox:%s " % (x.shape,ox.shape))
-
         return x

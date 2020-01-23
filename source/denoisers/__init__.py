@@ -5,14 +5,14 @@ from denoisers.unet import Unet
 from denoisers.sparse import SparseNet
 
 
-def get_denoiser(name, in_channels, out_channels, **kwargs):
+def get_denoiser(name, channels, **kwargs):
     if name == 'unet':
-        return Unet(in_channels, out_channels)
+        return Unet(channels)
     if name == 'baby-unet':
-        return BabyUnet(in_channels, out_channels)
+        return BabyUnet(channels)
     if name == 'dncnn':
-        return DnCNN(in_channels, out_channels)
+        return DnCNN(channels)
     if name == 'convolution':
-        return SingleConvolution(in_channels, out_channels, kwargs['width'])
+        return SingleConvolution(channels)
     if name == 'sparse':
-        return SparseNet(in_channels, out_channels)
+        return SparseNet(channels)

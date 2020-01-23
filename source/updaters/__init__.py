@@ -4,11 +4,11 @@ from updaters.admm import Admm
 from updaters.amp import Amp
 
 
-def get_updater(name):
+def get_updater(name,phi,y,denoiser,step_size):
     if name == 'fista':
-        return Fista()
+        return Fista(phi,y,denoiser,step_size)
     if name == 'gap':
-        return Gap()
+        return Gap(phi,y,denoiser,step_size)
     if name == 'admm':
         return Admm()
     if name == 'amp':
