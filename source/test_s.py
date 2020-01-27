@@ -6,65 +6,75 @@ import utils.configs as cfg
 import utils.util as util
 import utils.dataset as ds
 from denoisers import get_denoiser
-from iterative import Iterative
-from end2end import End2end
+from utils.end2end import End2end
 import torch
 
 
-def test_e2e(y, cfg):
+def test_e2e(label, phi, cfg):
+    y = label.mul(phi).sum(1)
+    # util.show_tensors(y)
     with torch.no_grad():
-        rec = phi.mul(x)
-        model = End2end(cfg.phase, cfg.u_name,
-                        cfg.d_name, cfg.frame, cfg.frame)
+        rec = y.repeat(args.frame, 1, 1, 1).permute(
+            1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
+        model = End2end(phi, cfg.phase, cfg.u_name,
+                        cfg.d_name, cfg.step_size)
         model.load_state_dict(cfg, restore)
-        rec = model(y)
+        model.eval()
+        rec = model(rec, y)
         return rec
 
 
-def test_iterative(y, cfg):
+def test_iterative(label, phi, cfg):
+    y = label.mul(phi).sum(1)
     with torch.no_grad():
-        denoiser = get_denoiser(cfg.d_name)
+        denoiser = get_denoiser(cfg.d_name, cfg.frame)
         denoier.load_state_dict(cfg.restore)
-        model = Iterative(cfg.steps, cfg.step_size, cfg.u_name, denoiser)
-        rec = model(y)
-        return rec
+        denoiser.eval()
+        updater = get_updater(cfg.u_name, phi, y, denoiser, cfg.step_size)
+        params = [y]
+        params.extend(updater.initialize())
+        for sp in range(self.steps):
+            params = updater(params)
+            print("sp ", sp, "PSNR ", compare_psnr(label,params[0]))
+        return params[0]
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Trainer Parameters",
-        prog="python ./train.py",
+        description="Self-supervised Tester Parameters",
+        prog="python ./test_s.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--use_gpu', default=False)    
+    parser.add_argument('--device', default=None)
     parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
-    parser.add_argument('--restore', default=None)
+    parser.add_argument('--restore', default=None)  # path
+    parser.add_argument('--manual', default=False)
     parser.add_argument('--u_name', default='fista')
-    parser.add_argument('--d_name', default='dncnn')
+    parser.add_argument('--d_name', default='sparse')
+    parser.add_argument('--l_name', default='mse')
+    parser.add_argument('--group', default=4)
     parser.add_argument('--frame', default=8)
-    parser.add_argument('--total_frame', default=32)
-    parser.add_argument('--learning_rate', default=0.0001)
-    parser.add_argument('--epoch', default=100)
-    parser.add_argument('--optimizer', default='adam')
-    parser.add_argument('--loss', default='mse')
-    parser.add_argument('--phase', default=5)  # e2e
+    parser.add_argument('--pixel', default=256)
     parser.add_argument('--steps', default=20)  # ite
-    parser.add_argument('--step_size', default=0.1)  # ite
+    parser.add_argument('--step_size', default=0.001)  # ite
     args = parser.parse_args()
+
+    if args.use_gpu:
+        if args.device is None:
+            args.device = util.getbestgpu()
+    else:
+        args.device = 'cpu'
 
     _, test_file, mask_file, para_dir, recon_dir, model_dir = cfg.general(
         args.name)
 
     label, phi = ds.load_test_data(test_file, mask_file)
-    util.show_tensor(label)
-
-    y = np.sum(np.multiply(label, phi), axis=3)
-    x = np.tile(np.reshape(np.multiply(yinput, sumPhi),
-                           [-1, pixel, pixel, 1]), [1, 1, 1, args.frame])
-    y = np.reshape(yinput, (-1, pixel, pixel, 1))
+    # util.show_tensors(label)
 
     start = time()
-    reconstruction = args.tester(x, y, phi, u_name, d_name, args)
+    reconstruction = args.tester(label, phi, y, args)
     end = time()
 
     psnr = compare_psnr(label, reconstruction)
