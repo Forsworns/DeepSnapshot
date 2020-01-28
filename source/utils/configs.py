@@ -29,15 +29,15 @@ class ConfigLog(object):
         if ssim is not None:
             self.cfg.update({'ssim': ssim})
 
-    def dump(para_dir):
-        t = time()
+    def dump(self, para_dir):
+        t = int(time())
         cfg_file = "{}/{}.json".format(para_dir, t)
-        with open() as f:
+        with open(cfg_file, "w") as f:
             json.dump(self.cfg, f)
 
     def load(self, cfg_file):
         try:
-            with open(d_cfg_file, "w") as f:
+            with open(d_cfg_file, "r") as f:
                 self.cfg = json.load(f)
         except FileNotFoundError:
             print("Error! Cannot find cfg for " + cfg_file)

@@ -3,16 +3,18 @@ import argparse
 from time import time
 from skimage.measure import compare_ssim, compare_psnr
 from denoisers import get_denoiser
-import utils.configs as cfg
+import utils.configs as config
 import utils.util as util
 import utils.dataset as ds
 from utils.mask import Masker
 from utils.end2end import End2end
 from torch.utils.data import DataLoader
 import torch
+import numpy as np
 
 
-def train_e2e(label,phi,cfg):
+def train_e2e(label, phi, cfg):
+    dataset = ds.SnapshotDataset(phi, label)
     torch.manual_seed(int(time()) % 10)
 
     model = End2end(phi, cfg.phase, cfg.step_size, cfg.u_name, cfg.d_name)
@@ -22,7 +24,6 @@ def train_e2e(label,phi,cfg):
 
     losses = []
     val_losses = []
-    best_images = []
     best_val_loss = 1
 
     data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
@@ -32,47 +33,47 @@ def train_e2e(label,phi,cfg):
         label, y = batch
         rec = y.repeat(args.frame, 1, 1, 1).permute(
             1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-        net_input, mask = masker.mask(rec, i % (masker.n_masks - 1))
+        net_input, mask = masker.mask(rec, ep % (masker.n_masks - 1))
         net_output = model(net_input, y)
         loss = loss_func(net_output*mask, rec*mask)
-        print("ep ", ep, "loss ", round(loss.item(),5))
+        print("ep ", ep, "loss ", round(loss.item(), 5))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         if ep % 10 == 0:
             losses.append(loss.item())
             model.eval()
-            net_input, mask = masker.mask(rec, (i+1) % (masker.n_masks - 1))
+            net_input, mask = masker.mask(rec, (ep+1) % (masker.n_masks - 1))
             net_output = model(net_input, y)
-            val_loss = loss_function(net_output*mask, rec*mask)
+            val_loss = loss_func(net_output*mask, rec*mask)
             val_losses.append(val_loss.item())
-            
-            print("ep ", ep, "loss ", round(loss.item(), 5),"val loss ",round(val_loss.item(), 5),"time ", time())
+
+            print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
+                  round(val_loss.item(), 5), "time ", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                net_output = np.clip(model(rec, y).detach().cpu().numpy()[
-                                   0, 0], 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(label.numpy(), net_output)
-                best_images.append(net_output)
+                best_img = np.clip(model(rec, y).detach(
+                ).cpu().numpy(), 0, 1).astype(np.float64)
+                best_psnr = compare_psnr(label.numpy(), best_img)
                 print("PSNR: ", np.round(best_psnr, 2))
         if ep == cfg.epoch:
             break
 
-    return model
+    return model, best_psnr
 
 
-def train_denoiser(label,phi,cfg):
+def train_denoiser(label, phi, cfg):
+    dataset = ds.NoisyDataset(label)
     torch.manual_seed(int(time()) % 10)
 
-    denoiser = get_denoiser(cfg.d_name)
+    denoiser = get_denoiser(cfg.d_name, cfg.frame)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='interpolate')
 
     losses = []
     val_losses = []
-    best_images = []
     best_val_loss = 1
 
     data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
@@ -80,33 +81,33 @@ def train_denoiser(label,phi,cfg):
     for ep, batch in enumerate(data_loader):
         denoiser.train()
         label, noisy = batch
-        net_input, mask = masker.mask(noisy, i % (masker.n_masks - 1))
-        net_output = model(net_input)
+        net_input, mask = masker.mask(noisy, ep % (masker.n_masks - 1))
+        net_output = denoiser(net_input)
         loss = loss_func(net_output*mask, noisy*mask)
-        print("ep ", ep, "loss ", round(loss.item(),5))
+        print("ep ", ep, "loss ", round(loss.item(), 5))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         if ep % 10 == 0:
             losses.append(loss.item())
             denoiser.eval()
-            net_input, mask = masker.mask(noisy, (i+1) % (masker.n_masks - 1))
-            net_output = model(net_input)
-            val_loss = loss_function(net_output*mask, label*mask)
+            net_input, mask = masker.mask(noisy, (ep+1) % (masker.n_masks - 1))
+            net_output = denoiser(net_input)
+            val_loss = loss_func(net_output*mask, noisy*mask)
             val_losses.append(val_loss.item())
-            print("ep ", ep, "loss ", round(loss.item(), 5),"val loss ",round(val_loss.item(), 5),"time ", time())
+            print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
+                  round(val_loss.item(), 5), "time ", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                denoised = np.clip(model(noisy).detach().cpu().numpy()[
-                                   0, 0], 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(real_label.numpy(),denoised)
-                best_images.append(denoised)
+                best_img = np.clip(denoiser(noisy).detach(
+                ).cpu().numpy(), 0, 1).astype(np.float64)
+                best_psnr = compare_psnr(label.numpy(), best_img)
                 print("PSNR: ", np.round(best_psnr, 2))
         if ep == cfg.epoch:
             break
 
-    return model
+    return denoiser, best_psnr
 
 
 if __name__ == "__main__":
@@ -114,7 +115,7 @@ if __name__ == "__main__":
         description="Self-supervised Trainer Parameters",
         prog="python ./train_s.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--use_gpu', default=False)    
+    parser.add_argument('--use_gpu', default=False)
     parser.add_argument('--device', default=None)
     parser.add_argument('--e2e', dest='trainer', const=train_e2e, default=train_denoiser,
                         action='store_const', help="test a iterative method or end2end model")
@@ -144,17 +145,18 @@ if __name__ == "__main__":
     else:
         args.device = 'cpu'
 
-    train_file, _, mask_file, para_dir, recon_dir, model_dir = cfg.general(
+    train_file, _, mask_file, para_dir, recon_dir, model_dir = config.general(
         args.name)
-    dataset = ds.load_train_data(train_file, mask_file)
+    label, phi = ds.load_train_data(train_file, mask_file)
 
     start = time()
-    reconstruction, model = args.trainer(dataset,args)
+    model, psnr = args.trainer(label, phi, args)
     end = time()
     t = end - start
-    print("Training Time: {}".format(psnr, ssim, t))
+    print("PSNR {}, Training Time: {}".format(psnr, t))
 
     util.save_model(model, model_dir, psnr)
-
-    config_log = config.ConfigLog(args)
+    args_dict = vars(args)
+    args_dict.pop('trainer')
+    config_log = config.ConfigLog(args_dict)
     config_log.dump(para_dir)

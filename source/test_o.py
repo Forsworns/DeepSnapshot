@@ -11,6 +11,8 @@ import utils.util as util
 import utils.dataset as ds
 from utils.mask import Masker
 from utils.end2end import End2end
+from PIL import Image
+import os
 
 
 def test_e2e(label, phi, cfg):
@@ -27,7 +29,6 @@ def test_e2e(label, phi, cfg):
 
         losses = []
         val_losses = []
-        best_images = []
         best_val_loss = 1
 
         noisy = y.repeat(args.frame, 1, 1, 1).permute(
@@ -51,14 +52,14 @@ def test_e2e(label, phi, cfg):
                 val = model(val, y)
                 val_loss = loss_func(val*mask, noisy*mask)
                 val_losses.append(val_loss.item())
-                print("ep ", ep, "loss ", loss.item(),"val loss ",val_loss.item(),"time ", time())
+                print("ep ", ep, "loss ", loss.item(), "val loss ",
+                      val_loss.item(), "time ", time())
 
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                     best_img = np.clip(model(noisy, y).detach(
                     ).cpu().numpy(), 0, 1).astype(np.float64)
-                    best_psnr = compare_psnr(label.numpy(),best_img)
-                    best_images.append(best_img)
+                    best_psnr = compare_psnr(label.numpy(), best_img)
                     print("PSNR: ", np.round(best_psnr, 2))
     else:
         model = load_model(cfg.restore)
@@ -73,21 +74,20 @@ def test_iterative(label, phi, cfg):
     # util.show_tensors(y)
     torch.manual_seed(int(time()) % 10)
     denoiser = get_denoiser(cfg.d_name, cfg.frame)
-    updater = get_updater(cfg.u_name, phi, y, denoiser, cfg.step_size)
+    updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='zero')
 
     losses = []
     val_losses = []
-    best_images = []
     best_val_loss = 1
 
     rec = y.repeat(args.frame, 1, 1, 1).permute(
         1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
     # may divide zero -> "nan"
     net_input = rec
-    params = [rec]
+    params = [rec, y]
     params.extend(updater.initialize())
 
     for sp in range(cfg.steps):
@@ -111,14 +111,14 @@ def test_iterative(label, phi, cfg):
                 net_input = denoiser(net_input)
                 val_loss = loss_func(net_input*mask, rec*mask)
                 val_losses.append(val_loss.item())
-                print("ep ", ep, "loss ", loss.item(), 5,"val loss ",val_loss.item(), "time ", time())
+                print("ep ", ep, "loss ", loss.item(), "val loss ",
+                      val_loss.item(), "time ", time())
 
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                     best_img = np.clip(denoiser(rec).detach(
                     ).cpu().numpy(), 0, 1).astype(np.float64)
-                    best_psnr = compare_psnr(label.numpy(),best_img)
-                    best_images.append(best_img)
+                    best_psnr = compare_psnr(label.numpy(), best_img)
                     print("PSNR: ", np.round(best_psnr, 2))
 
         params = updater(*params)
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         description="One shot Tester Parameters",
         prog="python ./test_o.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--use_gpu', default=False)    
+    parser.add_argument('--use_gpu', default=False)
     parser.add_argument('--device', default=None)
     parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
                         action='store_const', help="test a iterative method or end2end model")
@@ -146,16 +146,16 @@ if __name__ == "__main__":
     parser.add_argument('--frame', default=8)
     parser.add_argument('--pixel', default=256)
     parser.add_argument('--learning_rate', default=0.001)
-    parser.add_argument('--epoch', default=30)
+    parser.add_argument('--epoch', default=2)
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
     parser.add_argument('--phase', default=2)  # e2e
-    parser.add_argument('--steps', default=20)  # ite
+    parser.add_argument('--steps', default=2)  # ite
     parser.add_argument('--step_size', default=0.001)  # ite
     args = parser.parse_args()
 
     # use xx.to(cfg.device) to transfer the model or data
-    # to different devices 
+    # to different devices
     if args.use_gpu:
         if args.device is None:
             args.device = util.getbestgpu()
@@ -172,21 +172,29 @@ if __name__ == "__main__":
     reconstruction, model = args.tester(label, phi, args)
     end = time()
 
+    reconstruction = np.clip(reconstruction.detach().cpu().numpy(), 0, 1)
+    label = label.numpy()
     psnr = compare_psnr(label, reconstruction)
-    ssim = compare_ssim(label, reconstruction)
     t = end - start
-    print("PSNR {}, SSIM: {},Time: {}".format(psnr, ssim, t))
+    print("PSNR {},Time: {}".format(psnr, t))
 
-    save_model(model, model_dir, psnr)
+    util.save_model(model, model_dir, psnr)
 
-    config_log = config.ConfigLog(args)
+    args_dict = vars(args)
+    args_dict.pop('tester')
+    config_log = config.ConfigLog(args_dict)
     config_log.dump(para_dir)
 
+    recon_dir = "{}/{}".format(recon_dir, int(time()))
+    if not os.path.exists(recon_dir):
+        os.makedirs(recon_dir)
     for i in range(args.group):
         for j in range(args.frame):
-            PSNR = psnr(rec[i, j], xoutput[i, j])
-            print("Frame %d, PSNR: %.2f" % (i*args.frame+j, PSNR))
-            outImg = np.hstack((xoutput[i, j], rec[i, j]))
+            PSNR = compare_psnr(label[i, j], reconstruction[i, j])
+            SSIM = compare_ssim(label[i, j], reconstruction[i, j])
+            print("Frame %d, PSNR: %.2f, SSIM: %.2f" %
+                  (i*args.frame+j, PSNR, SSIM))
+            outImg = np.hstack((label[i, j], reconstruction[i, j]))
             imgRecName = "%s/frame%d_PSNR%.2f.png" % (
                 recon_dir, i*args.frame+j, PSNR)
             imgRec = Image.fromarray(

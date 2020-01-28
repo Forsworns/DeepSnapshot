@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 # n x t x w x d
 
 def measure(img, phi):
-    return img.mul(phi).sum(1)
+    return img.mul(phi).sum(0)
 
 class SnapshotDataset(Dataset):
     def __init__(self, phi, labels, mode='train'):
@@ -22,13 +22,14 @@ class SnapshotDataset(Dataset):
         return img, measure(img, self.phi)
 
 
-def add_noise(img):
-    return img + torch.randn(img.size())*torch.rand()
+def add_noise(img,sigma):
+    return img + torch.randn(img.size())*torch.rand(sigma)
 
 
 class NoisyDataset(Dataset):
-    def __init__(self, labels, mode='train'):
+    def __init__(self, labels, sigma=1, mode='train'):
         self.labels = labels
+        self.sigma = sigma
         self.mode = mode
 
     def __len__(self):
@@ -36,7 +37,7 @@ class NoisyDataset(Dataset):
 
     def __getitem__(self, index):
         img = self.labels[index]
-        return img, add_noise(img)
+        return img, add_noise(img,self.sigma)
 
 # Load training data
 

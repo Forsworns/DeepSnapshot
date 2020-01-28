@@ -12,10 +12,10 @@ class End2end(nn.Module):
         self.layers = nn.ModuleList()
         for _ in range(phase):
             denoiser = get_denoiser(d_name, channels)
-            updater = get_updater(u_name, phi, y, denoiser, step_size)
+            updater = get_updater(u_name, phi, denoiser, step_size)
             self.layers.append(updater)
- 
-        self.initial_params = get_updater(u_name, phi, denoiser, step_size).initialize()
+
+        self.initial_params = updater.initialize()
 
     def forward(self, x, y):
         params = [x, y]

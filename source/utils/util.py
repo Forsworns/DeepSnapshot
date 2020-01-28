@@ -9,15 +9,16 @@ import matplotlib.pyplot as plt
 from time import time, sleep
 
 
-def save_model(model, dir, psnr):
-    torch.save(model.state_dict(), "{}/{}-{}".format(dir, psnr, time()))
+def save_model(model, directory, psnr):
+    torch.save(model.state_dict(), "{}/{}-{}.pkl".format(directory,
+                                                         int(time()), np.round(psnr, 2)))
 
 
 def get_optimizer(o_name, model, lr):
     if o_name == 'adam':
         return Adam(model.parameters(), lr)
     elif o_name == 'sgd':
-        return SGD(model.parameters(), lr)  
+        return SGD(model.parameters(), lr)
 
 
 def get_loss(l_name):
@@ -40,30 +41,30 @@ def show_tensors(tensor, cmap='Greys_r', scale=False, titles=None):
     else:
         im = clip(im, 0, 1)
     if im.shape[0] == 1:
-        show_tensor(plt,im[0],cmap=cmap)
+        show_tensor(plt, im[0], cmap=cmap)
     else:
-        amount = im.shape[0] 
+        amount = im.shape[0]
         fig, ax = plt.subplots(1, amount, sharex='col',
-                           sharey='row', figsize=(amount * 4, 4))
+                               sharey='row', figsize=(amount * 4, 4))
 
         for i in range(amount):
             ax[i].get_xaxis().set_ticks([])
             ax[i].get_yaxis().set_ticks([])
-            show_tensor(ax[i],im[i],cmap)
+            show_tensor(ax[i], im[i], cmap)
             if titles:
                 ax[i].set_title(titles[i])
         fig
     plt.show()
 
-def show_tensor(handle,tensor,cmap):
+
+def show_tensor(handle, tensor, cmap):
     # tensor: t x w x d
     if len(tensor.shape) == 2:
-        handle.imshow(tensor,cmap=cmap)
+        handle.imshow(tensor, cmap=cmap)
     else:
         for t in range(tensor.shape[0]):
             handle.imshow(tensor[t])
             plt.pause(0.1)
-            
 
 
 def tensor_to_numpy(x):
