@@ -8,9 +8,10 @@ from denoisers.modules import ConvBlock
 class BabyUnet(nn.Module):
     def __init__(self, channel, width=16):
         super(BabyUnet, self).__init__()
-        self.pool1 = nn.MaxPool2d(kernel_size=2)
+        # down sample
+        self.pool1 = nn.MaxPool2d(kernel_size=2) 
         self.pool2 = nn.MaxPool2d(kernel_size=2)
-
+        # up sample
         self.up1 = lambda x: F.interpolate(
             x, mode='bilinear', scale_factor=2, align_corners=False)
         self.up2 = lambda x: F.interpolate(

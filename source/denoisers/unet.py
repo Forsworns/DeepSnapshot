@@ -11,6 +11,7 @@ class Unet(nn.Module):
 
         self.residual = residual
 
+        # down sample
         if down == 'maxpool':
             self.down1 = nn.MaxPool2d(kernel_size=2)
             self.down2 = nn.MaxPool2d(kernel_size=2)
@@ -39,6 +40,7 @@ class Unet(nn.Module):
             self.down3.bias.data = 0.01 * self.down3.bias.data + 0
             self.down4.bias.data = 0.01 * self.down4.bias.data + 0
 
+        # up sample
         if up == 'bilinear' or up == 'nearest':
             self.up1 = lambda x: nn.functional.interpolate(
                 x, mode=up, scale_factor=2)

@@ -377,6 +377,7 @@ class NLResAttModuleDownUpPlus(nn.Module):
         return hx
 
 
+# a same convblock (stride=1,kernel_size=3,padding=1)
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, dropout=False, norm='batch', residual=True, activation='leakyrelu', transpose=False):
         super(ConvBlock, self).__init__()

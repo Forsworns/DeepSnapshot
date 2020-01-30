@@ -13,6 +13,7 @@ class SingleConvolution(nn.Module):
             self.conv = nn.Conv2d(
                 channel, channel, kernel_size=width, padding=0)
         else:
+            # directly zero pading
             self.conv = nn.Conv2d(
                 channel, channel, kernel_size=width, padding=width // 2)
 

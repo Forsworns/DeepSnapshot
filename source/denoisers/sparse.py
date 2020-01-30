@@ -41,12 +41,12 @@ class SparseNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        #x = self.conv2(x)
-        #x = self.relu1(x)
-        #x = self.conv3(x)
-        #x = self.threshold(x)
-        #x = self.deconv1(x)
-        #x = self.relu2(x)
-        #x = self.deconv2(x)
+        x = self.conv2(x)
+        x = self.relu1(x)
+        x = self.conv3(x)
+        x = self.threshold(x)
+        x = self.deconv1(x)
+        x = self.relu2(x)
+        x = self.deconv2(x)
         x = self.deconv3(x)
         return x

@@ -46,10 +46,11 @@ def train_e2e(label, phi, cfg):
             net_input, mask = masker.mask(rec, (ep+1) % (masker.n_masks - 1))
             net_output = model(net_input, y)
             val_loss = loss_func(net_output*mask, rec*mask)
-            val_losses.append(val_loss.item())
+            val_loss = val_loss.item()
+            val_losses.append(val_loss)
 
             print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
-                  round(val_loss.item(), 5), "time ", time())
+                  round(val_loss, 5), "time ", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -94,9 +95,10 @@ def train_denoiser(label, phi, cfg):
             net_input, mask = masker.mask(noisy, (ep+1) % (masker.n_masks - 1))
             net_output = denoiser(net_input)
             val_loss = loss_func(net_output*mask, noisy*mask)
-            val_losses.append(val_loss.item())
+            val_loss = val_loss.item()
+            val_losses.append(val_loss)
             print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
-                  round(val_loss.item(), 5), "time ", time())
+                  round(val_loss, 5), "time ", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -120,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument('--e2e', dest='trainer', const=train_e2e, default=train_denoiser,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
-    parser.add_argument('--restore', default=None)  # e2e
+    parser.add_argument('--restore', default=None)  
     parser.add_argument('--manual', default=False)
     parser.add_argument('--u_name', default='fista')
     parser.add_argument('--d_name', default='sparse')
@@ -130,13 +132,12 @@ if __name__ == "__main__":
     parser.add_argument('--frame', default=8)
     parser.add_argument('--pixel', default=256)
     parser.add_argument('--learning_rate', default=0.001)
-    parser.add_argument('--epoch', default=30)
+    parser.add_argument('--epoch', default=10)
     parser.add_argument('--batch', default=2)
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
-    parser.add_argument('--phase', default=5)  # e2e
-    parser.add_argument('--steps', default=20)  # ite
-    parser.add_argument('--step_size', default=0.001)  # ite
+    parser.add_argument('--phase', default=1)  
+    parser.add_argument('--step_size', default=0.001)  
     args = parser.parse_args()
 
     if args.use_gpu:

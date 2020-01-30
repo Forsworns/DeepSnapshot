@@ -31,39 +31,39 @@ def test_e2e(label, phi, cfg):
         val_losses = []
         best_val_loss = 1
 
-        noisy = y.repeat(args.frame, 1, 1, 1).permute(
+        rec = y.repeat(args.frame, 1, 1, 1).permute(
             1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-        rec = noisy
 
         for ep in range(cfg.epoch):
             model.train()
-            rec, mask = masker.mask(rec, ep % (masker.n_masks - 1))
-            rec = model(rec, y)
-            loss = loss_func(rec*mask, noisy*mask)
+            net_input, mask = masker.mask(rec, ep % (masker.n_masks - 1))
+            net_output = model(net_input, y)
+            loss = loss_func(net_output*mask, rec*mask)
             print("ep ", ep, "loss ", loss.item())
             optimizer.zero_grad()
-            loss.backward(retain_graph=True)
+            loss.backward()
             optimizer.step()
             if ep % 10 == 0:
                 losses.append(loss.item())
                 model.eval()
-                val, mask = masker.mask(
-                    noisy, (ep+1) % (masker.n_masks - 1))
-                val = model(val, y)
-                val_loss = loss_func(val*mask, noisy*mask)
-                val_losses.append(val_loss.item())
+                net_input, mask = masker.mask(
+                    rec, (ep+1) % (masker.n_masks - 1))
+                net_output = model(net_input, y)
+                val_loss = loss_func(net_output*mask, rec*mask)
+                val_loss = val_loss.item()
+                val_losses.append(val_loss)
                 print("ep ", ep, "loss ", loss.item(), "val loss ",
-                      val_loss.item(), "time ", time())
+                      val_loss, "time ", time())
 
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
-                    best_img = np.clip(model(noisy, y).detach(
+                    best_img = np.clip(model(rec, y).detach(
                     ).cpu().numpy(), 0, 1).astype(np.float64)
                     best_psnr = compare_psnr(label.numpy(), best_img)
                     print("PSNR: ", np.round(best_psnr, 2))
     else:
         model = load_model(cfg.restore)
-    rec = model(noisy, y)
+    rec = model(rec, y)
     return rec, model
 
 # the denoiser is not blind, so maybe not suitable to save/restore a denoiser?
@@ -93,14 +93,14 @@ def test_iterative(label, phi, cfg):
     for sp in range(cfg.steps):
         for ep in range(cfg.epoch):
             denoiser.train()
-            net_input, mask = masker.mask(net_input, ep % (masker.n_masks - 1))
-            net_input = denoiser(net_input)
-            loss = loss_func(net_input*mask, rec*mask)
-            # util.show_tensors(net_input.detach().cpu())
+            net_input, mask = masker.mask(rec, ep % (masker.n_masks - 1))
+            net_output = denoiser(net_input)
+            loss = loss_func(net_output*mask, rec*mask)
+            # util.show_tensors(net_output.detach().cpu())
             print("step: ", sp, "ep ", ep, "loss ", loss.item())
 
             optimizer.zero_grad()
-            loss.backward(retain_graph=True)
+            loss.backward()
             optimizer.step()
 
             if ep % 10 == 0:
@@ -108,11 +108,12 @@ def test_iterative(label, phi, cfg):
                 denoiser.eval()
                 net_input, mask = masker.mask(
                     rec, (ep+1) % (masker.n_masks - 1))
-                net_input = denoiser(net_input)
-                val_loss = loss_func(net_input*mask, rec*mask)
-                val_losses.append(val_loss.item())
+                net_output = denoiser(net_input)
+                val_loss = loss_func(net_output*mask, rec*mask)
+                val_loss = val_loss.item()
+                val_losses.append(val_loss)
                 print("ep ", ep, "loss ", loss.item(), "val loss ",
-                      val_loss.item(), "time ", time())
+                      val_loss, "time ", time())
 
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
@@ -121,8 +122,10 @@ def test_iterative(label, phi, cfg):
                     best_psnr = compare_psnr(label.numpy(), best_img)
                     print("PSNR: ", np.round(best_psnr, 2))
 
-        params = updater(*params)
-        rec = params[0]
+        with torch.no_grad():
+            updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
+            params = updater(*params)
+            rec = params[0]
     return rec, denoiser
 
 
@@ -137,7 +140,7 @@ if __name__ == "__main__":
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)  # e2e
-    parser.add_argument('--manual', default=False)
+    parser.add_argument('--manual', default=False) # manual settings of updaters
     parser.add_argument('--u_name', default='fista')
     parser.add_argument('--d_name', default='sparse')
     parser.add_argument('--o_name', default='adam')
@@ -146,12 +149,12 @@ if __name__ == "__main__":
     parser.add_argument('--frame', default=8)
     parser.add_argument('--pixel', default=256)
     parser.add_argument('--learning_rate', default=0.001)
-    parser.add_argument('--epoch', default=2)
+    parser.add_argument('--epoch', default=10)
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
     parser.add_argument('--phase', default=2)  # e2e
-    parser.add_argument('--steps', default=2)  # ite
-    parser.add_argument('--step_size', default=0.001)  # ite
+    parser.add_argument('--steps', default=10)  # ite
+    parser.add_argument('--step_size', default=0.001)
     args = parser.parse_args()
 
     # use xx.to(cfg.device) to transfer the model or data
