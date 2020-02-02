@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+# RNAN modules
 # residual attention + downscale upscale + denoising
 
 
@@ -377,7 +378,8 @@ class NLResAttModuleDownUpPlus(nn.Module):
         return hx
 
 
-# a same convblock (stride=1,kernel_size=3,padding=1)
+# Unet module
+# same convblock (stride=1,kernel_size=3,padding=1)
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, dropout=False, norm='batch', residual=True, activation='leakyrelu', transpose=False):
         super(ConvBlock, self).__init__()
@@ -445,3 +447,62 @@ class ConvBlock(nn.Module):
         x = self.actfun2(x)
         # print("shapes: x:%s ox:%s " % (x.shape,ox.shape))
         return x
+
+
+# NLRNN Modules
+class NRResBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        self.norm1 = nn.BatchNorm2d(out_channels)
+        self.activate1 = nn.ReLU(inplace=True)
+        self.non_local = NRNLBlock(in_channels, out_channels)
+        self.norm2 = nn.BatchNorm2d(out_channels)
+        self.conv1 = nn.Conv2d(out_channels, out_channels,
+                               kernel_size=3, padding=1)
+        self.norm3 = nn.BatchNorm2d(out_channels)
+        self.activate2 = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(out_channels, in_channels,
+                               kernel_size=3, padding=1)
+
+    def forward(self, x, corr=None):
+        ox = x
+        x = self.norm1(x)
+        x = self.activate1(x)
+        x, corr_new = self.non_local(x, corr)
+        x = self.norm2(x)
+        x = self.conv1(x)
+        x = self.norm3(x)
+        x = self.activate2(x)
+        x = self.conv2(x)
+        x + ox
+        return x, corr_new
+
+
+class NRNLBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        self.conv_theta = nn.Conv2d(in_channels, out_channels kernel_size=1, padding=1)
+        self.conv_phi = nn.Conv2d(
+            in_channels, out_channels, kernel_size=1, padding=1)
+        self.conv_g = nn.Conv2d(in_channels, in_channels,
+                                kernel_size=1, padding=1)
+
+    def forward(self, x, corr):
+        ox = x
+        x_theta = self.conv_theta(x)
+        x_phi = self.conv_phi(x)
+        x_g = self.conv_g(x)  # better to be zero initialized
+        x_theta = x_theta.reshape(
+            x_theta.shape[0], x_theta.shape[1]*x_theta.shape[2], x_theta.shape[3])
+        x_phi = x_phi.reshape(
+            x_phi.shape[0], x_phi.shape[1]*x_phi.shape[2], x_phi.shape[3])
+        x_phi = x_phi.permute(0, 2, 1)
+        corr_new = x_theta*x_phi
+        if corr is not None:
+            corr_new += corr
+        # normalization for embedded Gaussian
+        corr_normed = nn.softmax(corr_new, axis=-1)
+        x_g = x_g.reshape(x_g.shape[0], x_g.shape[1]
+                          * x_g.shape[2], x_g.shape[3])
+        x = corr_normed * x_g
+        x = x.reshape(x.shape[0], x_phi.shape[1], x_phi.shape[2], -1)
+        x = x+ox
+        return x, corr_new

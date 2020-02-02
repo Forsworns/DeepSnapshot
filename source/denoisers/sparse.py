@@ -26,8 +26,8 @@ class SparseNet(nn.Module):
         self.conv3 = nn.Conv2d(in_channels=features, out_channels=features,
                                kernel_size=kernel_size, padding=padding, stride=stride, bias=False)
         
-        cal_width = lambda w: (w+2*padding-kernel_size)/stride+1
-        width = int(cal_width(cal_width(cal_width(pixel))))
+        conv_width = lambda w: (w+2*padding-kernel_size)/stride+1
+        width = int(conv_width(conv_width(conv_width(pixel))))
         limit = Variable(torch.zeros(features, width, width))
         self.threshold = lambda x: torch.mul(torch.sign(x), nn.functional.relu(torch.abs(x) - limit))
 

@@ -4,7 +4,6 @@ from denoisers import get_denoiser
 import sys
 sys.path.append('../')
 
-
 class End2end(nn.Module):
     def __init__(self, phi, phase, step_size, u_name, d_name, **kwargs):
         super(End2end, self).__init__()

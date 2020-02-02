@@ -1,0 +1,17 @@
+one shot到底有没有意义，可行？
+
+end2end里应该让自己学习updater的参数
+
+把updater去掉，相当于直接做一个rnn？ablation study
+
+loss有的也要改……比如考虑一些参数的sparsity
+
+device问题
+
+manually setting updater
+
+实际数据大小不同是怎么跑的
+
+关键是效果！
+
+不同phase 共享参数？
