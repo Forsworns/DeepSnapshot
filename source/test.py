@@ -49,22 +49,22 @@ if __name__ == "__main__":
         description="Tester Parameters",
         prog="python ./test.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--use_gpu', default=False)
+    parser.add_argument('--use_gpu', type=bool, default=False)
     parser.add_argument('--device', default=None)
     parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)  # path
-    parser.add_argument('--manual', default=False)
+    parser.add_argument('--manual', type=bool, default=False)
     parser.add_argument('--u_name', default='fista')
     parser.add_argument('--d_name', default='sparse')
     parser.add_argument('--l_name', default='mse')
-    parser.add_argument('--group', default=4)
-    parser.add_argument('--frame', default=8)
-    parser.add_argument('--pixel', default=256)
-    parser.add_argument('--phase', default=5)
-    parser.add_argument('--steps', default=20)  # ite
-    parser.add_argument('--step_size', default=0.001)  # ite
+    parser.add_argument('--group', type=int, default=4)
+    parser.add_argument('--frame', type=int, default=8)
+    parser.add_argument('--pixel', type=int, default=256)
+    parser.add_argument('--phase', type=int, default=5)
+    parser.add_argument('--steps', type=int, default=20)  # ite
+    parser.add_argument('--step_size', type=float, default=0.001)  # ite
     args = parser.parse_args()
 
     if args.use_gpu:

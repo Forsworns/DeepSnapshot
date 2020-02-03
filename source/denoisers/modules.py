@@ -479,7 +479,8 @@ class NRResBlock(nn.Module):
 
 class NRNLBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
-        self.conv_theta = nn.Conv2d(in_channels, out_channels kernel_size=1, padding=1)
+        self.conv_theta = nn.Conv2d(
+            in_channels, out_channels, kernel_size=1, padding=1)
         self.conv_phi = nn.Conv2d(
             in_channels, out_channels, kernel_size=1, padding=1)
         self.conv_g = nn.Conv2d(in_channels, in_channels,

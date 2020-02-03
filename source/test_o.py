@@ -18,11 +18,12 @@ import os
 def test_e2e(label, phi, cfg):
     y = label.mul(phi).sum(1)
     # util.show_tensors(y)
+    y = y.to(cfg.device)
 
     torch.manual_seed(int(time()) % 10)
     if cfg.restore is None:
-        model = End2end(phi, cfg.phase, cfg.step_size, cfg.u_name,
-                        cfg.d_name)
+        model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name)
+        model = model.to(cfg.device)
         optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
         loss_func = util.get_loss(cfg.l_name)
         masker = Masker(frame=cfg.frame, width=4, mode='interpolate')
@@ -37,6 +38,7 @@ def test_e2e(label, phi, cfg):
         for ep in range(cfg.epoch):
             model.train()
             net_input, mask = masker.mask(rec, ep % (masker.n_masks - 1))
+            net_input = net_input.to(cfg.device)
             net_output = model(net_input, y)
             loss = loss_func(net_output*mask, rec*mask)
             print("ep ", ep, "loss ", loss.item())
@@ -48,6 +50,7 @@ def test_e2e(label, phi, cfg):
                 model.eval()
                 net_input, mask = masker.mask(
                     rec, (ep+1) % (masker.n_masks - 1))
+                net_input = net_input.to(cfg.device)
                 net_output = model(net_input, y)
                 val_loss = loss_func(net_output*mask, rec*mask)
                 val_loss = val_loss.item()
@@ -74,6 +77,7 @@ def test_iterative(label, phi, cfg):
     # util.show_tensors(y)
     torch.manual_seed(int(time()) % 10)
     denoiser = get_denoiser(cfg.d_name, cfg.frame)
+    denoiser = denoiser.to(cfg.device)
     updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
     loss_func = util.get_loss(cfg.l_name)
@@ -94,6 +98,7 @@ def test_iterative(label, phi, cfg):
         for ep in range(cfg.epoch):
             denoiser.train()
             net_input, mask = masker.mask(rec, ep % (masker.n_masks - 1))
+            net_input = net_input.to(cfg.device)
             net_output = denoiser(net_input)
             loss = loss_func(net_output*mask, rec*mask)
             # util.show_tensors(net_output.detach().cpu())
@@ -108,6 +113,7 @@ def test_iterative(label, phi, cfg):
                 denoiser.eval()
                 net_input, mask = masker.mask(
                     rec, (ep+1) % (masker.n_masks - 1))
+                net_input = net_input.to(cfg.device)
                 net_output = denoiser(net_input)
                 val_loss = loss_func(net_output*mask, rec*mask)
                 val_loss = val_loss.item()
@@ -134,27 +140,28 @@ if __name__ == "__main__":
         description="One shot Tester Parameters",
         prog="python ./test_o.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--use_gpu', default=False)
+    parser.add_argument('--use_gpu', type=bool, default=False)
     parser.add_argument('--device', default=None)
     parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)  # e2e
-    parser.add_argument('--manual', default=False) # manual settings of updaters
+    # manual settings of updaters
+    parser.add_argument('--manual', type=bool, default=False)
     parser.add_argument('--u_name', default='fista')
     parser.add_argument('--d_name', default='sparse')
     parser.add_argument('--o_name', default='adam')
     parser.add_argument('--l_name', default='mse')
-    parser.add_argument('--group', default=4)
-    parser.add_argument('--frame', default=8)
-    parser.add_argument('--pixel', default=256)
-    parser.add_argument('--learning_rate', default=0.001)
-    parser.add_argument('--epoch', default=10)
+    parser.add_argument('--group', type=int, default=4)
+    parser.add_argument('--frame', type=int, default=8)
+    parser.add_argument('--pixel', type=int, default=256)
+    parser.add_argument('--learning_rate', type=float, default=0.0001)
+    parser.add_argument('--epoch', type=int, default=20)
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
-    parser.add_argument('--phase', default=2)  # e2e
-    parser.add_argument('--steps', default=10)  # ite
-    parser.add_argument('--step_size', default=0.001)
+    parser.add_argument('--phase', type=int, default=1)  # e2e
+    parser.add_argument('--steps', type=int, default=10)  # ite
+    parser.add_argument('--step_size', type=float, default=0.001)
     args = parser.parse_args()
 
     # use xx.to(cfg.device) to transfer the model or data
