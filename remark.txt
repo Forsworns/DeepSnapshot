@@ -4,7 +4,7 @@ one shot到底有没有意义，可行？
 
 把updater去掉，相当于直接做一个rnn？ablation study
 
-loss有的也要改……比如考虑一些参数的sparsity
+loss有的也要改……比如考虑一些参数的sparsity，对称性
 
 # device问题
 
@@ -12,6 +12,23 @@ manually setting updater
 
 实际数据大小不同是怎么跑的
 
-关键是效果！
-
 不同phase 共享参数？
+
+一定要用res...因为要学近似的identity
+
+# OOM when evaluate (compute psnr)?
+
+train尝试梯度累加？减少内存
+```
+loss = loss/accumulation_steps # 2.2 back propagation 
+loss.backward() 
+# 3. update parameters of net 
+if((i+1)%accumulation_steps)==0: # optimizer the net 
+    optimizer.step() # update parameters of net 
+    optimizer.zero_grad() # reset gradient
+```
+
+2.4
+framework done
+non local
+one shot loss在降，但是图像质量提不了

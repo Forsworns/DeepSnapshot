@@ -35,7 +35,7 @@ def expand(x, r):
 def show_tensors(tensor, cmap='Greys_r', scale=False, titles=None):
     # cmap: 'Greys_r','magma'
     # tensor: n x t x w x d
-    im = tensor.numpy()
+    im = tensor.detach().cpu().numpy()
     if scale:
         im = im / im.max()
     else:

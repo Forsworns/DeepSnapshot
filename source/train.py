@@ -16,7 +16,7 @@ def train_e2e(label, phi, cfg):
     dataset = ds.SnapshotDataset(phi, label)
     torch.manual_seed(int(time()) % 10)
 
-    model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name)
+    model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name, cfg.share)
     model = model.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
     loss_func = util.get_loss(cfg.l_name)
@@ -41,22 +41,22 @@ def train_e2e(label, phi, cfg):
         loss.backward()
         optimizer.step()
         if ep % 10 == 0:
-            losses.append(loss.item())
-            model.eval()
-            net_output = model(rec, y)
-            val_loss = loss_func(net_output, label)
-            val_loss = val_loss.item()
-            val_losses.append(val_loss)
+            with torch.no_grad():
+                losses.append(loss.item())
+                model.eval()
+                net_output = model(rec, y)
+                val_loss = loss_func(net_output, label)
+                val_loss = val_loss.item()
+                val_losses.append(val_loss)
 
-            print("ep ", ep, "loss ", loss.item(), "val loss ",
-                  val_loss, "time ", time())
+                print("ep ", ep, "loss ", loss.item(), "val loss ",
+                    val_loss, "time ", time())
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_img = np.clip(model(rec, y).detach(
-                ).cpu().numpy(), 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(label.numpy(), best_img)
-                print("PSNR: ", np.round(best_psnr, 2))
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                    best_psnr = compare_psnr(label.numpy(), best_img)
+                    print("PSNR: ", np.round(best_psnr, 2))
         if ep == cfg.epoch:
             break
 
@@ -90,22 +90,22 @@ def train_denoiser(label, phi, cfg):
         loss.backward()
         optimizer.step()
         if ep % 10 == 0:
-            losses.append(loss.item())
-            denoiser.eval()
-            net_output = denoiser(noisy)
-            val_loss = loss_func(net_output, label)
-            val_loss = val_loss.item()
-            val_losses.append(val_loss)
+            with torch.no_grad():
+                losses.append(loss.item())
+                denoiser.eval()
+                net_output = denoiser(noisy)
+                val_loss = loss_func(net_output, label)
+                val_loss = val_loss.item()
+                val_losses.append(val_loss)
 
-            print("ep ", ep, "loss ", loss.item(), "val loss ",
-                  val_loss, "time ", time())
+                print("ep ", ep, "loss ", loss.item(), "val loss ",
+                    val_loss, "time ", time())
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_img = np.clip(denoiser(noisy).detach(
-                ).cpu().numpy(), 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(label.numpy(), best_img)
-                print("PSNR: ", np.round(best_psnr, 2))
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                    best_psnr = compare_psnr(label.numpy(), best_img)
+                    print("PSNR: ", np.round(best_psnr, 2))
         if ep == cfg.epoch:
             break
     return denoiser, best_psnr
@@ -136,6 +136,7 @@ if __name__ == "__main__":
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
     parser.add_argument('--phase', type=int, default=1)
+    parser.add_argument('--share', type=bool, default=True) 
     args = parser.parse_args()
 
     if args.use_gpu:

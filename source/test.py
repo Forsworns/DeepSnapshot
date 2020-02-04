@@ -19,7 +19,7 @@ def test_e2e(label, phi, cfg):
     with torch.no_grad():
         rec = y.repeat(args.frame, 1, 1, 1).permute(
             1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-        model = End2end(phi, cfg.phase, cfg.step_size, cfg.u_name, cfg.d_name)
+        model = End2end(phi, cfg.phase, cfg.step_size, cfg.u_name, cfg.d_name, cfg.share)
         model.load_state_dict(torch.load(cfg.restore))
         model.eval()
         rec = model(rec, y)
@@ -63,6 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)
     parser.add_argument('--phase', type=int, default=5)
+    parser.add_argument('--share', type=bool, default=True) 
     parser.add_argument('--steps', type=int, default=20)  # ite
     parser.add_argument('--step_size', type=float, default=0.001)  # ite
     args = parser.parse_args()

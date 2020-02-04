@@ -17,7 +17,7 @@ def train_e2e(label, phi, cfg):
     dataset = ds.SnapshotDataset(phi, label)
     torch.manual_seed(int(time()) % 10)
 
-    model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name)
+    model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name, cfg.share)
     model = model.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
     loss_func = util.get_loss(cfg.l_name)
@@ -44,24 +44,24 @@ def train_e2e(label, phi, cfg):
         loss.backward()
         optimizer.step()
         if ep % 10 == 0:
-            losses.append(loss.item())
-            model.eval()
-            net_input, mask = masker.mask(rec, (ep+1) % (masker.n_masks - 1))
-            net_input = net_input.to(cfg.device)
-            net_output = model(net_input, y)
-            val_loss = loss_func(net_output*mask, rec*mask)
-            val_loss = val_loss.item()
-            val_losses.append(val_loss)
+            with torch.no_grad():
+                losses.append(loss.item())
+                model.eval()
+                net_input, mask = masker.mask(rec, (ep+1) % (masker.n_masks - 1))
+                net_input = net_input.to(cfg.device)
+                net_output = model(net_input, y)
+                val_loss = loss_func(net_output*mask, rec*mask)
+                val_loss = val_loss.item()
+                val_losses.append(val_loss)
 
-            print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
-                  round(val_loss, 5), "time ", time())
+                print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
+                    round(val_loss, 5), "time ", time())
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_img = np.clip(model(rec, y).detach(
-                ).cpu().numpy(), 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(label.numpy(), best_img)
-                print("PSNR: ", np.round(best_psnr, 2))
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                    best_psnr = compare_psnr(label.numpy(), best_img)
+                    print("PSNR: ", np.round(best_psnr, 2))
         if ep == cfg.epoch:
             break
 
@@ -96,23 +96,23 @@ def train_denoiser(label, phi, cfg):
         loss.backward()
         optimizer.step()
         if ep % 10 == 0:
-            losses.append(loss.item())
-            denoiser.eval()
-            net_input, mask = masker.mask(noisy, (ep+1) % (masker.n_masks - 1))
-            net_input = net_input.to(cfg.device)
-            net_output = denoiser(net_input)
-            val_loss = loss_func(net_output*mask, noisy*mask)
-            val_loss = val_loss.item()
-            val_losses.append(val_loss)
-            print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
-                  round(val_loss, 5), "time ", time())
+            with torch.no_grad():
+                losses.append(loss.item())
+                denoiser.eval()
+                net_input, mask = masker.mask(noisy, (ep+1) % (masker.n_masks - 1))
+                net_input = net_input.to(cfg.device)
+                net_output = denoiser(net_input)
+                val_loss = loss_func(net_output*mask, noisy*mask)
+                val_loss = val_loss.item()
+                val_losses.append(val_loss)
+                print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
+                    round(val_loss, 5), "time ", time())
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_img = np.clip(denoiser(noisy).detach(
-                ).cpu().numpy(), 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(label.numpy(), best_img)
-                print("PSNR: ", np.round(best_psnr, 2))
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                    best_psnr = compare_psnr(label.numpy(), best_img)
+                    print("PSNR: ", np.round(best_psnr, 2))
         if ep == cfg.epoch:
             break
 
@@ -144,6 +144,7 @@ if __name__ == "__main__":
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
     parser.add_argument('--phase', type=int, default=1)
+    parser.add_argument('--share', type=bool, default=True)
     args = parser.parse_args()
 
     if args.use_gpu:

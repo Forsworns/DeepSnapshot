@@ -22,7 +22,7 @@ def test_e2e(label, phi, cfg):
 
     torch.manual_seed(int(time()) % 10)
     if cfg.restore is None:
-        model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name)
+        model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name, cfg.share)
         model = model.to(cfg.device)
         optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
         loss_func = util.get_loss(cfg.l_name)
@@ -34,6 +34,7 @@ def test_e2e(label, phi, cfg):
 
         rec = y.repeat(args.frame, 1, 1, 1).permute(
             1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
+        # util.show_tensors(rec)
 
         for ep in range(cfg.epoch):
             model.train()
@@ -46,24 +47,25 @@ def test_e2e(label, phi, cfg):
             loss.backward()
             optimizer.step()
             if ep % 10 == 0:
-                losses.append(loss.item())
-                model.eval()
-                net_input, mask = masker.mask(
-                    rec, (ep+1) % (masker.n_masks - 1))
-                net_input = net_input.to(cfg.device)
-                net_output = model(net_input, y)
-                val_loss = loss_func(net_output*mask, rec*mask)
-                val_loss = val_loss.item()
-                val_losses.append(val_loss)
-                print("ep ", ep, "loss ", loss.item(), "val loss ",
-                      val_loss, "time ", time())
+                with torch.no_grad():
+                    losses.append(loss.item())
+                    model.eval()
+                    net_input, mask = masker.mask(
+                        rec, (ep+1) % (masker.n_masks - 1))
+                    net_input = net_input.to(cfg.device)
+                    net_output = model(net_input, y)
+                    val_loss = loss_func(net_output*mask, rec*mask)
+                    val_loss = val_loss.item()
+                    val_losses.append(val_loss)
+                    print("ep ", ep, "loss ", loss.item(), "val loss ",
+                        val_loss, "time ", time())
 
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    best_img = np.clip(model(rec, y).detach(
-                    ).cpu().numpy(), 0, 1).astype(np.float64)
-                    best_psnr = compare_psnr(label.numpy(), best_img)
-                    print("PSNR: ", np.round(best_psnr, 2))
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        best_img = np.clip(
+                            net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                        best_psnr = compare_psnr(label.numpy(), best_img)
+                        print("PSNR: ", np.round(best_psnr, 2))
     else:
         model = load_model(cfg.restore)
     rec = model(rec, y)
@@ -103,30 +105,30 @@ def test_iterative(label, phi, cfg):
             loss = loss_func(net_output*mask, rec*mask)
             # util.show_tensors(net_output.detach().cpu())
             print("step: ", sp, "ep ", ep, "loss ", loss.item())
-
+            
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             if ep % 10 == 0:
-                losses.append(loss.item())
-                denoiser.eval()
-                net_input, mask = masker.mask(
-                    rec, (ep+1) % (masker.n_masks - 1))
-                net_input = net_input.to(cfg.device)
-                net_output = denoiser(net_input)
-                val_loss = loss_func(net_output*mask, rec*mask)
-                val_loss = val_loss.item()
-                val_losses.append(val_loss)
-                print("ep ", ep, "loss ", loss.item(), "val loss ",
-                      val_loss, "time ", time())
+                with torch.no_grad():
+                    losses.append(loss.item())
+                    denoiser.eval()
+                    net_input, mask = masker.mask(
+                        rec, (ep+1) % (masker.n_masks - 1))
+                    net_input = net_input.to(cfg.device)
+                    net_output = denoiser(net_input)
+                    val_loss = loss_func(net_output*mask, rec*mask)
+                    val_loss = val_loss.item()
+                    val_losses.append(val_loss)
+                    print("ep ", ep, "loss ", loss.item(), "val loss ",
+                        val_loss, "time ", time())
 
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    best_img = np.clip(denoiser(rec).detach(
-                    ).cpu().numpy(), 0, 1).astype(np.float64)
-                    best_psnr = compare_psnr(label.numpy(), best_img)
-                    print("PSNR: ", np.round(best_psnr, 2))
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                        best_psnr = compare_psnr(label.numpy(), best_img)
+                        print("PSNR: ", np.round(best_psnr, 2))
 
         with torch.no_grad():
             updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
@@ -159,7 +161,8 @@ if __name__ == "__main__":
     parser.add_argument('--epoch', type=int, default=20)
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
-    parser.add_argument('--phase', type=int, default=1)  # e2e
+    parser.add_argument('--phase', type=int, default=3)  # e2e
+    parser.add_argument('--share', type=bool, default=False)  # e2e
     parser.add_argument('--steps', type=int, default=10)  # ite
     parser.add_argument('--step_size', type=float, default=0.001)
     args = parser.parse_args()
