@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
     train_file, _, mask_file, para_dir, recon_dir, model_dir = config.general(
         args.name)
-    label, phi = ds.load_train_data(train_file, mask_file)
+    label, phi = ds.load_train_data(train_file, mask_file, True)
 
     start = time()
     model, psnr = args.trainer(label, phi, args)

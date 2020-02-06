@@ -11,7 +11,7 @@ from torch.autograd import Variable
 
 class ResGroup(nn.Module):
     def __init__(self, conv, n_feats, kernel_size, act, res_scale):
-        super(_ResGroup, self).__init__()
+        super(ResGroup, self).__init__()
         modules_body = []
         modules_body.append(ResAttModuleDownUpPlus(
             conv, n_feats, kernel_size, bias=True, bn=False, act=nn.ReLU(True), res_scale=1))
@@ -27,7 +27,7 @@ class ResGroup(nn.Module):
 
 class NLResGroup(nn.Module):
     def __init__(self, conv, n_feats, kernel_size, act, res_scale):
-        super(_NLResGroup, self).__init__()
+        super(NLResGroup, self).__init__()
         modules_body = []
 
         modules_body.append(NLResAttModuleDownUpPlus(
@@ -137,8 +137,8 @@ class NonLocalBlock2D(nn.Module):
 
         self.W = nn.Conv2d(in_channels=self.inter_channels,
                            out_channels=self.in_channels, kernel_size=1, stride=1, padding=0)
-        nn.init.constant(self.W.weight, 0)
-        nn.init.constant(self.W.bias, 0)
+        nn.init.constant_(self.W.weight, 0)
+        nn.init.constant_(self.W.bias, 0)
 
         self.theta = nn.Conv2d(in_channels=self.in_channels,
                                out_channels=self.inter_channels, kernel_size=1, stride=1, padding=0)
@@ -452,7 +452,8 @@ class ConvBlock(nn.Module):
 # NLRNN Modules
 class NRResBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
-        self.norm1 = nn.BatchNorm2d(out_channels)
+        super(NRResBlock, self).__init__()
+        self.norm1 = nn.BatchNorm2d(in_channels)
         self.activate1 = nn.ReLU(inplace=True)
         self.non_local = NRNLBlock(in_channels, out_channels)
         self.norm2 = nn.BatchNorm2d(out_channels)
@@ -479,12 +480,14 @@ class NRResBlock(nn.Module):
 
 class NRNLBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
+        super(NRNLBlock, self).__init__()
         self.conv_theta = nn.Conv2d(
-            in_channels, out_channels, kernel_size=1, padding=1)
+            in_channels, out_channels, kernel_size=1, padding=0)
         self.conv_phi = nn.Conv2d(
-            in_channels, out_channels, kernel_size=1, padding=1)
+            in_channels, out_channels, kernel_size=1, padding=0)
         self.conv_g = nn.Conv2d(in_channels, in_channels,
-                                kernel_size=1, padding=1)
+                                kernel_size=1, padding=0)
+        nn.init.constant_(self.conv_g.weight, 0)
 
     def forward(self, x, corr):
         ox = x
@@ -492,18 +495,18 @@ class NRNLBlock(nn.Module):
         x_phi = self.conv_phi(x)
         x_g = self.conv_g(x)  # better to be zero initialized
         x_theta = x_theta.reshape(
-            x_theta.shape[0], x_theta.shape[1]*x_theta.shape[2], x_theta.shape[3])
+            x_theta.shape[0], x_theta.shape[1], x_theta.shape[2]*x_theta.shape[3])
         x_phi = x_phi.reshape(
-            x_phi.shape[0], x_phi.shape[1]*x_phi.shape[2], x_phi.shape[3])
-        x_phi = x_phi.permute(0, 2, 1)
-        corr_new = x_theta*x_phi
+            x_phi.shape[0], x_phi.shape[1], x_phi.shape[2]*x_phi.shape[3])
+        x_theta = x_theta.permute(0, 2, 1)
+        corr_new = torch.matmul(x_theta, x_phi)
         if corr is not None:
             corr_new += corr
         # normalization for embedded Gaussian
-        corr_normed = nn.softmax(corr_new, axis=-1)
-        x_g = x_g.reshape(x_g.shape[0], x_g.shape[1]
-                          * x_g.shape[2], x_g.shape[3])
-        x = corr_normed * x_g
-        x = x.reshape(x.shape[0], x_phi.shape[1], x_phi.shape[2], -1)
+        corr_normed = F.softmax(corr_new)
+        x_g = x_g.reshape(x_g.shape[0], x_g.shape[1],
+                          x_g.shape[2] * x_g.shape[3])
+        x = torch.matmul(x_g, corr_normed)
+        x = x.reshape_as(ox)
         x = x+ox
         return x, corr_new

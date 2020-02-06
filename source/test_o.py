@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # manual settings of updaters
     parser.add_argument('--manual', type=bool, default=False)
     parser.add_argument('--u_name', default='fista')
-    parser.add_argument('--d_name', default='sparse')
+    parser.add_argument('--d_name', default='rnan')
     parser.add_argument('--o_name', default='adam')
     parser.add_argument('--l_name', default='mse')
     parser.add_argument('--group', type=int, default=4)
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     parser.add_argument('--epoch', type=int, default=20)
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
-    parser.add_argument('--phase', type=int, default=3)  # e2e
+    parser.add_argument('--phase', type=int, default=2)  # e2e
     parser.add_argument('--share', type=bool, default=False)  # e2e
     parser.add_argument('--steps', type=int, default=10)  # ite
     parser.add_argument('--step_size', type=float, default=0.001)

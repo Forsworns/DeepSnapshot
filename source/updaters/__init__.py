@@ -1,3 +1,4 @@
+from updaters.plain import Plain
 from updaters.ista import Ista
 from updaters.fista import Fista
 from updaters.gap import Gap
@@ -6,6 +7,8 @@ from updaters.amp import Amp
 
 
 def get_updater(name,phi,denoiser,step_size):
+    if name == 'plain':
+        return Plain(phi,denoiser,step_size)
     if name == 'ista':
         return Ista(phi,denoiser,step_size)
     if name == 'fista':

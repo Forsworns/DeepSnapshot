@@ -2,6 +2,8 @@ import torch
 import scipy.io as sio
 import h5py
 from torch.utils.data import Dataset
+import os
+import numpy as np
 
 # n x t x w x d
 
@@ -40,7 +42,6 @@ class NoisyDataset(Dataset):
         return img, add_noise(img,self.sigma)
 
 # Load training data
-
 
 def load_train_data(train_file, mask_file, mat73=False):
     if mat73 == True:                                                # if .mat file is too big, use h5py to load

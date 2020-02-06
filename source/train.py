@@ -10,9 +10,10 @@ from utils.end2end import End2end
 from torch.utils.data import DataLoader
 import torch
 import numpy as np
-
+from torch.untils.tensorboard import SummaryWriter 
 
 def train_e2e(label, phi, cfg):
+    # writer = SummaryWriter()
     dataset = ds.SnapshotDataset(phi, label)
     torch.manual_seed(int(time()) % 10)
 
@@ -130,9 +131,9 @@ if __name__ == "__main__":
     parser.add_argument('--group', type=int, default=4)
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)
-    parser.add_argument('--learning_rate', type=float, default=0.001)
-    parser.add_argument('--epoch', type=int, default=10)
-    parser.add_argument('--batch', type=int, default=2)
+    parser.add_argument('--learning_rate', type=float, default=0.0001)
+    parser.add_argument('--epoch', type=int, default=100)
+    parser.add_argument('--batch', type=int, default=4)
     parser.add_argument('--optimizer', default='adam')
     parser.add_argument('--loss', default='mse')
     parser.add_argument('--phase', type=int, default=1)
@@ -147,7 +148,8 @@ if __name__ == "__main__":
 
     train_file, _, mask_file, para_dir, recon_dir, model_dir = config.general(
         args.name)
-    label, phi = ds.load_train_data(train_file, mask_file)
+    label, phi = ds.load_train_data(train_file, mask_file, True)
+    print(label.shape)
 
     start = time()
     model, psnr = args.trainer(label, phi, args)
