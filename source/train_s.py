@@ -27,43 +27,44 @@ def train_e2e(label, phi, cfg):
     val_losses = []
     best_val_loss = 1
 
-    data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+    accumulation_steps = cfg.poor
+    for ep in range(cfg.epoch):
+        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+        for ep_i, batch in enumerate(data_loader):
+            model.train()
+            label, y = batch
+            rec = y.repeat(args.frame, 1, 1, 1).permute(
+                1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
+            y = y.to(cfg.device)
+            net_input, mask = masker.mask(rec, ep_i % (masker.n_masks - 1))
+            net_input = net_input.to(cfg.device)
+            net_output = model(net_input, y)
+            loss = loss_func(net_output*mask, rec*mask)
+            loss.backward()
+            if ep_i % accumulation_steps == 0:
+                print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
+            if (ep_i+1)%accumulation_steps ==0:
+                optimizer.zero_grad()
+                optimizer.step()
+            if ep_i % 10*accumulation_steps == 0:
+                with torch.no_grad():
+                    losses.append(loss.item())
+                    model.eval()
+                    net_input, mask = masker.mask(rec, (ep_i+1) % (masker.n_masks - 1))
+                    net_input = net_input.to(cfg.device)
+                    net_output = model(net_input, y)
+                    val_loss = loss_func(net_output*mask, rec*mask)
+                    val_loss = val_loss.item()
+                    val_losses.append(val_loss)
 
-    for ep, batch in enumerate(data_loader):
-        model.train()
-        label, y = batch
-        rec = y.repeat(args.frame, 1, 1, 1).permute(
-            1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-        y = y.to(cfg.device)
-        net_input, mask = masker.mask(rec, ep % (masker.n_masks - 1))
-        net_input = net_input.to(cfg.device)
-        net_output = model(net_input, y)
-        loss = loss_func(net_output*mask, rec*mask)
-        print("ep ", ep, "loss ", round(loss.item(), 5))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        if ep % 10 == 0:
-            with torch.no_grad():
-                losses.append(loss.item())
-                model.eval()
-                net_input, mask = masker.mask(rec, (ep+1) % (masker.n_masks - 1))
-                net_input = net_input.to(cfg.device)
-                net_output = model(net_input, y)
-                val_loss = loss_func(net_output*mask, rec*mask)
-                val_loss = val_loss.item()
-                val_losses.append(val_loss)
+                    print("ep_i ", ep_i, "loss ", round(loss.item(), 5), "val loss ",
+                        round(val_loss, 5), "time ", time())
 
-                print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
-                    round(val_loss, 5), "time ", time())
-
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                    best_psnr = compare_psnr(label.numpy(), best_img)
-                    print("PSNR: ", np.round(best_psnr, 2))
-        if ep == cfg.epoch:
-            break
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                        best_psnr = compare_psnr(label.numpy(), best_img)
+                        print("PSNR: ", np.round(best_psnr, 2))
 
     return model, best_psnr
 
@@ -82,39 +83,39 @@ def train_denoiser(label, phi, cfg):
     val_losses = []
     best_val_loss = 1
 
-    data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+    accumulation_steps = cfg.poor
+    for ep in range(cfg.epoch):
+        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+        for ep_i, batch in enumerate(data_loader):
+            denoiser.train()
+            label, noisy = batch
+            net_input, mask = masker.mask(noisy, ep_i % (masker.n_masks - 1))
+            net_input = net_input.to(cfg.device)
+            net_output = denoiser(net_input)
+            loss.backward()
+            if ep_i % accumulation_steps == 0:
+                print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
+            if (ep_i+1)%accumulation_steps ==0:
+                optimizer.zero_grad()
+                optimizer.step()
+            if ep_i % 10*accumulation_steps == 0:
+                with torch.no_grad():
+                    losses.append(loss.item())
+                    denoiser.eval()
+                    net_input, mask = masker.mask(noisy, (ep_i+1) % (masker.n_masks - 1))
+                    net_input = net_input.to(cfg.device)
+                    net_output = denoiser(net_input)
+                    val_loss = loss_func(net_output*mask, noisy*mask)
+                    val_loss = val_loss.item()
+                    val_losses.append(val_loss)
+                    print("ep_i ", ep_i, "loss ", round(loss.item(), 5), "val loss ",
+                        round(val_loss, 5), "time ", time())
 
-    for ep, batch in enumerate(data_loader):
-        denoiser.train()
-        label, noisy = batch
-        net_input, mask = masker.mask(noisy, ep % (masker.n_masks - 1))
-        net_input = net_input.to(cfg.device)
-        net_output = denoiser(net_input)
-        loss = loss_func(net_output*mask, noisy*mask)
-        print("ep ", ep, "loss ", round(loss.item(), 5))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        if ep % 10 == 0:
-            with torch.no_grad():
-                losses.append(loss.item())
-                denoiser.eval()
-                net_input, mask = masker.mask(noisy, (ep+1) % (masker.n_masks - 1))
-                net_input = net_input.to(cfg.device)
-                net_output = denoiser(net_input)
-                val_loss = loss_func(net_output*mask, noisy*mask)
-                val_loss = val_loss.item()
-                val_losses.append(val_loss)
-                print("ep ", ep, "loss ", round(loss.item(), 5), "val loss ",
-                    round(val_loss, 5), "time ", time())
-
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                    best_psnr = compare_psnr(label.numpy(), best_img)
-                    print("PSNR: ", np.round(best_psnr, 2))
-        if ep == cfg.epoch:
-            break
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                        best_psnr = compare_psnr(label.numpy(), best_img)
+                        print("PSNR: ", np.round(best_psnr, 2))
 
     return denoiser, best_psnr
 
