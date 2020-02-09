@@ -36,30 +36,29 @@ def train_e2e(label, phi, cfg):
             rec = rec.to(cfg.device)
             y = y.to(cfg.device)
             net_output = model(rec, y)
-            loss = loss_func(net_output, rec)
+            loss = loss_func(net_output, label)/accumulation_steps
             loss.backward()
             if ep_i % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1)%accumulation_steps ==0:
                 optimizer.zero_grad()
                 optimizer.step()
-            if ep_i % 10*accumulation_steps == 0:
-                with torch.no_grad():
-                    losses.append(loss.item())
-                    model.eval()
-                    net_output = model(rec, y)
-                    val_loss = loss_func(net_output, label)
-                    val_loss = val_loss.item()
-                    val_losses.append(val_loss)
+        with torch.no_grad():
+            losses.append(loss.item())
+            model.eval()
+            net_output = model(rec, y)
+            val_loss = loss_func(net_output, label)
+            val_loss = val_loss.item()
+            val_losses.append(val_loss)
 
-                    print("ep_i ", ep_i, "loss ", loss.item(), "val loss ",
-                        val_loss, "time ", time())
+            print("ep_i ", ep_i, "loss ", loss.item(), "val loss ",
+                val_loss, "time ", time())
 
-                    if val_loss < best_val_loss:
-                        best_val_loss = val_loss
-                        best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                        best_psnr = compare_psnr(label.numpy(), best_img)
-                        print("PSNR: ", np.round(best_psnr, 2))
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                best_psnr = compare_psnr(label.numpy(), best_img)
+                print("PSNR: ", np.round(best_psnr, 2))
 
     return model, best_psnr
 
@@ -93,23 +92,22 @@ def train_denoiser(label, phi, cfg):
             if (ep_i+1)%accumulation_steps ==0:
                 optimizer.zero_grad()
                 optimizer.step()
-            if ep_i % 10*accumulation_steps == 0:
-                with torch.no_grad():
-                    losses.append(loss.item())
-                    denoiser.eval()
-                    net_output = denoiser(noisy)
-                    val_loss = loss_func(net_output, label)
-                    val_loss = val_loss.item()
-                    val_losses.append(val_loss)
+        with torch.no_grad():
+            losses.append(loss.item())
+            denoiser.eval()
+            net_output = denoiser(noisy)
+            val_loss = loss_func(net_output, label)
+            val_loss = val_loss.item()
+            val_losses.append(val_loss)
 
-                    print("ep_i ", ep_i, "loss ", loss.item(), "val loss ",
-                        val_loss, "time ", time())
+            print("ep_i ", ep_i, "loss ", loss.item(), "val loss ",
+                val_loss, "time ", time())
 
-                    if val_loss < best_val_loss:
-                        best_val_loss = val_loss
-                        best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                        best_psnr = compare_psnr(label.numpy(), best_img)
-                        print("PSNR: ", np.round(best_psnr, 2))
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                best_psnr = compare_psnr(label.numpy(), best_img)
+                print("PSNR: ", np.round(best_psnr, 2))
     return denoiser, best_psnr
 
 
@@ -125,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)
     parser.add_argument('--manual', default=False)
-    parser.add_argument('--u_name', default='fista')
+    parser.add_argument('--u_name', default='plain')
     parser.add_argument('--d_name', default='sparse')
     parser.add_argument('--o_name', default='adam')
     parser.add_argument('--l_name', default='mse')
@@ -135,8 +133,6 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', type=float, default=0.0001)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--batch', type=int, default=4)
-    parser.add_argument('--optimizer', default='adam')
-    parser.add_argument('--loss', default='mse')
     parser.add_argument('--phase', type=int, default=1)
     parser.add_argument('--share', type=bool, default=True) 
     parser.add_argument('--poor',type=int, default=1)

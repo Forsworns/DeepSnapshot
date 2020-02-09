@@ -159,8 +159,6 @@ if __name__ == "__main__":
     parser.add_argument('--pixel', type=int, default=256)
     parser.add_argument('--learning_rate', type=float, default=0.0001)
     parser.add_argument('--epoch', type=int, default=20)
-    parser.add_argument('--optimizer', default='adam')
-    parser.add_argument('--loss', default='mse')
     parser.add_argument('--phase', type=int, default=2)  # e2e
     parser.add_argument('--share', type=bool, default=False)  # e2e
     parser.add_argument('--steps', type=int, default=10)  # ite
