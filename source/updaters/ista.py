@@ -1,4 +1,3 @@
-from utils import util
 import torch.nn as nn
 import sys
 sys.path.append('../')
@@ -18,7 +17,6 @@ class Ista(nn.Module):
         x = last_x - self.step_size * \
             (y_t-y).repeat(self.frame, 1, 1,
                            1).permute(1, 0, 2, 3).mul(self.phi)
-        util.show_tensors(rec)
         x = self.denoiser(x)
         return x, y
 

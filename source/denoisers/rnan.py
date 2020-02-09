@@ -3,7 +3,7 @@ from denoisers.modules import default_conv, NLResGroup, ResGroup
 
 
 class RNAN(nn.Module):
-    def __init__(self, args, conv=default_conv):
+    def __init__(self, conv=default_conv):
         super(RNAN, self).__init__()
         n_resgroup = 10
         n_resblock = 16
