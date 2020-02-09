@@ -15,20 +15,20 @@ class End2end(nn.Module):
         if b_share:
             denoiser = get_denoiser(d_name, channels)
             for _ in range(phase):
-                step_size = Variable(torch.zeros(1), requires_grad=True)
-                updater = get_updater(u_name, phi, denoiser, step_size)
+                step_size = nn.Parameter(torch.zeros(1),requires_grad=True)
+                updater = get_updater(u_name, denoiser,step_size)
                 self.layers.append(updater)
         else:
             for _ in range(phase):
+                step_size = nn.Parameter(torch.zeros(1),requires_grad=True)
                 denoiser = get_denoiser(d_name, channels)
-                step_size = Variable(torch.zeros(1), requires_grad=True)
-                updater = get_updater(u_name, phi, denoiser, step_size)
+                updater = get_updater(u_name, denoiser,step_size)
                 self.layers.append(updater)
+        print(self.layers)
+        self.initial_params = updater.initialize(phi)
 
-        self.initial_params = updater.initialize()
-
-    def forward(self, x, y):
-        params = [x, y]
+    def forward(self, x, y, phi):
+        params = [x, y, phi]
         params.extend(self.initial_params)
         for l in self.layers:
             params = l(*params)

@@ -3,12 +3,15 @@ import torch
 
 
 class Plain(nn.Module):
-    def __init__(self,phi,denoiser,step_size):
+    def __init__(self, denoiser, step_size):
         super(Plain, self).__init__()
+        self.denoiser = denoiser
+        self.step_size = step_size
 
     def forward(self,*params):
-        x = param
-        return x
+        x, y, phi = params
+        x = self.denoiser(x)
+        return x, y, phi
 
-    def initialize(self):
+    def initialize(self,phi):
         return []

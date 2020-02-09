@@ -10,11 +10,11 @@ from torch.autograd import Variable
 
 
 class ResGroup(nn.Module):
-    def __init__(self, conv, n_feats, kernel_size, act, res_scale):
+    def __init__(self, conv, n_feats, kernel_size, act=nn.ReLU(True), res_scale=1):
         super(ResGroup, self).__init__()
         modules_body = []
         modules_body.append(ResAttModuleDownUpPlus(
-            conv, n_feats, kernel_size, bias=True, bn=False, act=nn.ReLU(True), res_scale=1))
+            conv, n_feats, kernel_size, bias=True, bn=False, act=act, res_scale=res_scale))
         modules_body.append(conv(n_feats, n_feats, kernel_size))
         self.body = nn.Sequential(*modules_body)
 
@@ -26,11 +26,11 @@ class ResGroup(nn.Module):
 
 
 class NLResGroup(nn.Module):
-    def __init__(self, conv, n_feats, kernel_size, act, res_scale):
+    def __init__(self, conv, n_feats, kernel_size, act=nn.ReLU(True), res_scale=1):
         super(NLResGroup, self).__init__()
         modules_body = []
         modules_body.append(NLResAttModuleDownUpPlus(
-            conv, n_feats, kernel_size, bias=True, bn=False, act=nn.ReLU(True), res_scale=1))
+            conv, n_feats, kernel_size, bias=True, bn=False, act=act, res_scale=res_scale))
         # if we don't use group residual, donot remove the following conv
         modules_body.append(conv(n_feats, n_feats, kernel_size))
         self.body = nn.Sequential(*modules_body)

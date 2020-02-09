@@ -35,3 +35,7 @@ one shot loss在降，但是图像质量提不了
 先在traffic上试，load_data不用true，其他上面要true
 记得开e2e...
 可以试一下args.poor是否可行
+
+可以用tensorboard看一下网络结构！
+
+不要把常数初始化在__init__中，否则会混乱，分不清variable和constant

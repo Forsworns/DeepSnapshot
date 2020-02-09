@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch
-from torch.autograd import Variable
-from denoisers.modules import  default_conv
+from denoisers.modules import default_conv
 # net is same as dncnn? only with a bias?
 
 # from xc
@@ -16,22 +15,23 @@ class SparseNet(nn.Module):
             pixel = kwgs['pixel']
         else:
             pixel = 256
-        self.conv1 = conv(channels, n_feat, kernel_size)
+        self.conv1 = conv(channel, n_feat, kernel_size)
         self.conv2 = conv(n_feat, n_feat, kernel_size)
         self.relu1 = nn.ReLU(inplace=True)
         self.conv3 = conv(n_feat, n_feat, kernel_size)
 
+        padding = kernel_size//2
+        stride = 1
         def conv_width(w): return (w+2*padding-kernel_size)/stride+1
         width = int(conv_width(conv_width(conv_width(pixel))))
-        limit = Variable(torch.zeros(n_feat, width, width),
-                         requires_grad=True)
+        self.limit = nn.Parameter(torch.zeros(1), requires_grad=True)
         self.threshold = lambda x: torch.mul(torch.sign(
-            x), nn.functional.relu(torch.abs(x) - limit))
+            x), nn.functional.relu(torch.abs(x) - self.limit))
 
         self.deconv1 = conv(n_feat, n_feat, kernel_size)
         self.relu2 = nn.ReLU(inplace=True)
         self.deconv2 = conv(n_feat, n_feat, kernel_size)
-        self.deconv3 = conv(n_feat, channels, kernel_size)
+        self.deconv3 = conv(n_feat, channel, kernel_size)
 
     def forward(self, x):
         ox = x

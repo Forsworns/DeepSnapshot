@@ -9,22 +9,30 @@ from utils.end2end import End2end
 from torch.utils.data import DataLoader
 import torch
 import numpy as np
-# from torch.untils.tensorboard import SummaryWriter 
+# from torch.utils.tensorboard import SummaryWriter 
+from tensorboardX import SummaryWriter 
 
 def train_e2e(label, phi, cfg):
-    # writer = SummaryWriter()
+    writer = SummaryWriter()
     dataset = ds.SnapshotDataset(phi, label)
     torch.manual_seed(int(time()) % 10)
 
     model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name, cfg.share)
+    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     model = model.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
     loss_func = util.get_loss(cfg.l_name)
 
+    with writer as w:
+        dummy_x = torch.zeros_like(label[0].unsqueeze(0))
+        dummy_y = torch.zeros_like(label[0,0].unsqueeze(0))
+        w.add_graph(model,(dummy_x,dummy_y,phi))
+
     losses = []
     val_losses = []
     best_val_loss = 1
-
+    best_psnr = 0
+    
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
         data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
@@ -35,7 +43,7 @@ def train_e2e(label, phi, cfg):
                 1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
             rec = rec.to(cfg.device)
             y = y.to(cfg.device)
-            net_output = model(rec, y)
+            net_output = model(rec, y, phi)
             loss = loss_func(net_output, label)/accumulation_steps
             loss.backward()
             if ep_i % accumulation_steps == 0:
@@ -46,7 +54,7 @@ def train_e2e(label, phi, cfg):
         with torch.no_grad():
             losses.append(loss.item())
             model.eval()
-            net_output = model(rec, y)
+            net_output = model(rec, y, phi)
             val_loss = loss_func(net_output, label)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
@@ -59,7 +67,7 @@ def train_e2e(label, phi, cfg):
                 best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
                 best_psnr = compare_psnr(label.numpy(), best_img)
                 print("PSNR: ", np.round(best_psnr, 2))
-
+    
     return model, best_psnr
 
 
@@ -118,12 +126,12 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--use_gpu', type=bool, default=False)
     parser.add_argument('--device', default=None)
-    parser.add_argument('--e2e', dest='trainer', const=train_e2e, default=train_denoiser,
+    parser.add_argument('--denoise', dest='trainer', const=train_denoiser, default=train_e2e,
                         action='store_const', help="test a iterative method or end2end model")
-    parser.add_argument('--name', default='Kobe')
+    parser.add_argument('--name', default='Traffic')
     parser.add_argument('--restore', default=None)
     parser.add_argument('--manual', default=False)
-    parser.add_argument('--u_name', default='plain')
+    parser.add_argument('--u_name', default='ista')
     parser.add_argument('--d_name', default='sparse')
     parser.add_argument('--o_name', default='adam')
     parser.add_argument('--l_name', default='mse')
@@ -132,9 +140,9 @@ if __name__ == "__main__":
     parser.add_argument('--pixel', type=int, default=256)
     parser.add_argument('--learning_rate', type=float, default=0.0001)
     parser.add_argument('--epoch', type=int, default=100)
-    parser.add_argument('--batch', type=int, default=4)
-    parser.add_argument('--phase', type=int, default=1)
-    parser.add_argument('--share', type=bool, default=True) 
+    parser.add_argument('--batch', type=int, default=8)
+    parser.add_argument('--phase', type=int, default=3)
+    parser.add_argument('--share', type=bool, default=False) 
     parser.add_argument('--poor',type=int, default=1)
     args = parser.parse_args()
 

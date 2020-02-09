@@ -51,7 +51,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--use_gpu', type=bool, default=False)
     parser.add_argument('--device', default=None)
-    parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
+    parser.add_argument('--denoise', dest='tester', const=test_iterative, default=test_e2e,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)  # path
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)
     parser.add_argument('--phase', type=int, default=5)
-    parser.add_argument('--share', type=bool, default=True) 
+    parser.add_argument('--share', type=bool, default=False) 
     parser.add_argument('--steps', type=int, default=20)  # ite
     parser.add_argument('--step_size', type=float, default=0.001)  # ite
     args = parser.parse_args()

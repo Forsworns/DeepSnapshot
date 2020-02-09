@@ -144,7 +144,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--use_gpu', type=bool, default=False)
     parser.add_argument('--device', default=None)
-    parser.add_argument('--e2e', dest='tester', const=test_e2e, default=test_iterative,
+    parser.add_argument('--denoise', dest='tester', const=test_iterative, default=test_e2e,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)  # e2e

@@ -38,7 +38,7 @@ def train_e2e(label, phi, cfg):
             y = y.to(cfg.device)
             net_input, mask = masker.mask(rec, ep_i % (masker.n_masks - 1))
             net_input = net_input.to(cfg.device)
-            net_output = model(net_input, y)
+            net_output = model(net_input, y, phi)
             loss =  loss_func(net_output*mask, noisy*mask)/accumulation_steps
             loss.backward()
             if ep_i % accumulation_steps == 0:
@@ -51,7 +51,7 @@ def train_e2e(label, phi, cfg):
             model.eval()
             net_input, mask = masker.mask(rec, (ep_i+1) % (masker.n_masks - 1))
             net_input = net_input.to(cfg.device)
-            net_output = model(net_input, y)
+            net_output = model(net_input, y, phi)
             val_loss = loss_func(net_output*mask, rec*mask)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--use_gpu', type=bool, default=False)
     parser.add_argument('--device', default=None)
-    parser.add_argument('--e2e', dest='trainer', const=train_e2e, default=train_denoiser,
+    parser.add_argument('--denoise', dest='trainer', const=train_denoiser, default=train_e2e,
                         action='store_const', help="test a iterative method or end2end model")
     parser.add_argument('--name', default='Kobe')
     parser.add_argument('--restore', default=None)
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     parser.add_argument('--epoch', type=int, default=10)
     parser.add_argument('--batch', type=int, default=2)
     parser.add_argument('--phase', type=int, default=1)
-    parser.add_argument('--share', type=bool, default=True)
+    parser.add_argument('--share', type=bool, default=False)
     args = parser.parse_args()
 
     if args.use_gpu:

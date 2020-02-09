@@ -1,6 +1,5 @@
 from denoisers.babyunet import BabyUnet
 from denoisers.dncnn import DnCNN
-from denoisers.singleconv import SingleConvolution
 from denoisers.unet import Unet
 from denoisers.sparse import SparseNet
 from denoisers.nlrnn import NLRNN
@@ -15,8 +14,6 @@ def get_denoiser(name, channels, **kwargs):
         return BabyUnet(channels)
     if name == 'dncnn':
         return DnCNN(channels)
-    if name == 'convolution':
-        return SingleConvolution(channels)
     if name == 'sparse':
         return SparseNet(channels)
     if name == 'nlrnn':
