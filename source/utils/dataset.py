@@ -25,11 +25,11 @@ class SnapshotDataset(Dataset):
 
 
 def add_noise(img,sigma):
-    return img + torch.randn(img.size())*torch.rand(sigma)
+    return img + torch.randn(img.size())*sigma
 
 
 class NoisyDataset(Dataset):
-    def __init__(self, labels, sigma=1, mode='train'):
+    def __init__(self, labels, sigma=0.1, mode='train'):
         self.labels = labels
         self.sigma = sigma
         self.mode = mode

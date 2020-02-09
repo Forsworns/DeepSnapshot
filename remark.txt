@@ -30,5 +30,8 @@ if((i+1)%accumulation_steps)==0: # optimizer the net
 
 2.4
 framework done
-non local
+non local：缩小范围或者下采样？
 one shot loss在降，但是图像质量提不了
+先在traffic上试，load_data不用true，其他上面要true
+记得开e2e...
+可以试一下args.poor是否可行

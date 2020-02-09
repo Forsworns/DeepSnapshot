@@ -1,25 +1,25 @@
 import torch.nn as nn
-from denoisers.modules import NRResBlock
+from denoisers.modules import  default_conv, UpSampler, DownSampler,NRResBlock
 
 
 class NLRNN(nn.Module):
-    def __init__(self,  channels, state_num=1):
+    def __init__(self, channel, conv=default_conv, layer_num=1):
         super(NLRNN, self).__init__()
-        self.state_num = state_num
-        self.norm1 = nn.BatchNorm2d(channels)
-        self.conv1 = nn.Conv2d(
-                channels, 128, kernel_size=3, padding=1)
-        self.nr_res = NRResBlock(128,channels)
-        self.norm2 = nn.BatchNorm2d(channels)
+        kernel_size=3
+        n_feat=64
+        self.layer_num = layer_num
+        self.norm1 = nn.BatchNorm2d(channel)
+        self.conv1 = conv(channel, n_feat, kernel_size)
+        self.nr_res = NRResBlock(n_feat,channel)
+        self.norm2 = nn.BatchNorm2d(channel)
         self.activate = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(
-                128, channels, kernel_size=3, padding=1)
+        self.conv2 = conv(channel, n_feat, kernel_size)
 
     def forward(self, x):
         x = self.norm1(x)
         x = self.conv1(x)
         x, corr = self.nr_res(x)
-        for i in range(self.state_num-1):
+        for i in range(self.layer_num-1):
             x, corr = self.nr_res(x, corr) # share the same weights
         x = self.norm2(x)
         x = self.activate(x)

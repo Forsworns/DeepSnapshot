@@ -5,6 +5,7 @@ from denoisers.unet import Unet
 from denoisers.sparse import SparseNet
 from denoisers.nlrnn import NLRNN
 from denoisers.rnan import RNAN
+from denoisers.nlscale import NLScale
 
 
 def get_denoiser(name, channels, **kwargs):
@@ -22,3 +23,5 @@ def get_denoiser(name, channels, **kwargs):
         return NLRNN(channels)
     if name == 'rnan':
         return RNAN(channels)
+    if name == 'nlscale':
+        return NLScale(channels)
