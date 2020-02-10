@@ -45,7 +45,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             rec = rec.to(cfg.device)
             y = y.to(cfg.device)
             net_output = model(rec, y, phi)
-            '''
+
             loss = loss_func(net_output, label)/accumulation_steps
             loss.backward()
             if ep_i % accumulation_steps == 0:
@@ -53,14 +53,6 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             if (ep_i+1)%accumulation_steps ==0:
                 optimizer.step()
                 optimizer.zero_grad()
-            '''
-
-            optimizer.zero_grad()
-            loss = loss_func(net_output, label)
-            loss.backward()
-            if ep_i % accumulation_steps == 0:
-                print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
-            optimizer.step()
 
         with torch.no_grad():
             losses.append(loss.item())
