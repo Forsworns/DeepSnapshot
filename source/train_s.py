@@ -11,6 +11,7 @@ from utils.end2end import End2end
 from torch.utils.data import DataLoader
 import torch
 import numpy as np
+from torch.optim import lr_scheduler
 
 
 def train_e2e(label, phi, t_label, t_phi, cfg):
@@ -20,6 +21,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name, cfg.share)
     model = model.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.2)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='interpolate')
 
@@ -44,6 +46,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             if ep_i % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
+                scheduler.step(loss)
                 optimizer.step()
                 optimizer.zero_grad()
         with torch.no_grad():
@@ -71,10 +74,10 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     label, y = next(enumerate(data_loader))
     rec = y.repeat(args.frame, 1, 1, 1).permute(
         1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-    net_output = model(rec, y, phi)
+    net_output = model(rec, y, phi).detach().cpu().numpy()
     psnr = compare_psnr(label.numpy(), np.clip(
-        net_output.detach().cpu().numpy(), 0, 1).astype(np.float64))
-    return model, best_psnr
+        net_output, 0, 1).astype(np.float64))
+    return denoiser, psnr, net_output
 
 
 def train_denoiser(label, phi, t_label, t_phi, cfg):
@@ -84,6 +87,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
     denoiser = get_denoiser(cfg.d_name, cfg.frame)
     denoiser = denoiser.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.2)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='interpolate')
 
@@ -105,6 +109,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
             if ep_i % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
+                scheduler.step(loss)
                 optimizer.step()
                 optimizer.zero_grad()
         with torch.no_grad():
@@ -130,10 +135,10 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
     dataset = ds.NoisyDataset(t_label)
     data_loader = DataLoader(dataset, batch_size=1, shuffle=True)
     label, noisy = next(enumerate(data_loader))
-    net_output = model(noisy)
+    net_output = model(noisy).detach().cpu().numpy()
     psnr = compare_psnr(label.numpy(), np.clip(
-        net_output.detach().cpu().numpy(), 0, 1).astype(np.float64))
-    return denoiser, psnr
+        net_output, 0, 1).astype(np.float64))
+    return denoiser, psnr, net_output
 
 
 if __name__ == "__main__":
@@ -174,7 +179,7 @@ if __name__ == "__main__":
     t_label, t_phi = ds.load_train_data(test_file, mask_file, True)
 
     start = time()
-    model, psnr = args.trainer(label, phi, t_label, t_phi, args)
+    model, psnr, reconstruction = args.trainer(label, phi, t_label, t_phi, args)
     end = time()
     t = end - start
     print("PSNR {}, Training Time: {}".format(psnr, t))
@@ -184,3 +189,19 @@ if __name__ == "__main__":
     args_dict.pop('trainer')
     config_log = config.ConfigLog(args_dict)
     config_log.dump(para_dir)
+
+    recon_dir = "{}/{}".format(recon_dir, int(time()))
+    if not os.path.exists(recon_dir):
+        os.makedirs(recon_dir)
+    for i in range(args.group):
+        for j in range(args.frame):
+            PSNR = compare_psnr(label[i, j], reconstruction[i, j])
+            SSIM = compare_ssim(label[i, j], reconstruction[i, j])
+            print("Frame %d, PSNR: %.2f, SSIM: %.2f" %
+                  (i*args.frame+j, PSNR, SSIM))
+            outImg = np.hstack((label[i, j], reconstruction[i, j]))
+            imgRecName = "%s/frame%d_PSNR%.2f.png" % (
+                recon_dir, i*args.frame+j, PSNR)
+            imgRec = Image.fromarray(
+                np.clip(255*outImg, 0, 255).astype(np.uint8))
+            imgRec.save(imgRecName)
