@@ -31,7 +31,9 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
 
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
-        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
+        data_loader = DataLoader(
+            dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
+        optimizer.zero_grad()
         for ep_i, batch in enumerate(data_loader):
             model.train()
             label, y = batch
@@ -43,9 +45,8 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             net_output = model(net_input, y, phi)
             loss = loss_func(net_output*mask, noisy*mask)/accumulation_steps
             loss.backward()
-            if ep_i % accumulation_steps == 0:
-                print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
+                print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
                 optimizer.step()
                 optimizer.zero_grad()
         with torch.no_grad():
@@ -60,7 +61,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             val_losses.append(val_loss)
 
             print("ep_i ", ep_i, "loss ", round(loss.item(), 5), "val loss ",
-                  round(val_loss, 5), "time ", time())
+                  round(val_loss, 5), "lr", optimizer.param_groups[0]['lr'], "time ", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -97,7 +98,9 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
 
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
-        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
+        data_loader = DataLoader(
+            dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
+        optimizer.zero_grad()
         for ep_i, batch in enumerate(data_loader):
             denoiser.train()
             label, noisy = batch
@@ -106,9 +109,8 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
             net_output = denoiser(net_input)
             loss = loss_func(net_output*mask, noisy*mask)/accumulation_steps
             loss.backward()
-            if ep_i % accumulation_steps == 0:
-                print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
+                print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
                 optimizer.step()
                 optimizer.zero_grad()
         with torch.no_grad():
@@ -123,7 +125,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
             val_loss = val_loss.item()
             val_losses.append(val_loss)
             print("ep_i ", ep_i, "loss ", round(loss.item(), 5), "val loss ",
-                  round(val_loss, 5), "time ", time())
+                  round(val_loss, 5), "lr", optimizer.param_groups[0]['lr'], "time ", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -179,7 +181,8 @@ if __name__ == "__main__":
     t_label, t_phi = ds.load_train_data(test_file, mask_file, True)
 
     start = time()
-    model, psnr, reconstruction = args.trainer(label, phi, t_label, t_phi, args)
+    model, psnr, reconstruction = args.trainer(
+        label, phi, t_label, t_phi, args)
     end = time()
     t = end - start
     print("PSNR {}, Training Time: {}".format(psnr, t))

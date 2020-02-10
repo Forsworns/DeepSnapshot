@@ -10,9 +10,9 @@ class NLScale(nn.Module):
         layers = []
         layers.append(conv(channel, n_feat, kernel_size))
         layers.append(DownSampler(2, n_feat))
-        layers.append(NLResGroup(conv, n_feat*4, kernel_size))
         layers.append(ResGroup(conv, n_feat*4, kernel_size))
         layers.append(NLResGroup(conv, n_feat*4, kernel_size))
+        layers.append(ResGroup(conv, n_feat*4, kernel_size))
         layers.append(conv(n_feat*4, channel, kernel_size))
         layers.append(UpSampler(conv, 2, channel))
         self.net = nn.Sequential(*layers)
