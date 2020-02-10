@@ -29,7 +29,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
 
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
-        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
         for ep_i, batch in enumerate(data_loader):
             model.train()
             label, y = batch
@@ -93,7 +93,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
 
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
-        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
         for ep_i, batch in enumerate(data_loader):
             denoiser.train()
             label, noisy = batch

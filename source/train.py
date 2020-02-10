@@ -36,7 +36,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
 
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
-        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
         for ep_i, batch in enumerate(data_loader):
             model.train()
             label, y = batch
@@ -99,7 +99,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
 
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
-        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True)
+        data_loader = DataLoader(dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
         for ep_i, batch in enumerate(data_loader):
             denoiser.train()
             label, noisy = batch
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', type=float, default=0.0001)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--batch', type=int, default=8)
-    parser.add_argument('--phase', type=int, default=2)
+    parser.add_argument('--phase', type=int, default=1)
     parser.add_argument('--share', type=bool, default=False)
     parser.add_argument('--poor', type=int, default=1)
     args = parser.parse_args()
