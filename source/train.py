@@ -54,7 +54,6 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             if ep_i % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
-                scheduler.step(loss)
                 optimizer.step()
                 optimizer.zero_grad()
 
@@ -63,6 +62,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             model.eval()
             net_output = model(rec, y, phi)
             val_loss = loss_func(net_output, label)
+            scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
 
@@ -116,7 +116,6 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
             if ep_i % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
-                scheduler.step(loss)
                 optimizer.step()
                 optimizer.zero_grad()
         with torch.no_grad():
@@ -124,6 +123,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
             denoiser.eval()
             net_output = denoiser(noisy)
             val_loss = loss_func(net_output, label)
+            scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
 
@@ -136,6 +136,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
                     net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
                 best_psnr = compare_psnr(label.numpy(), best_img)
                 print("PSNR: ", np.round(best_psnr, 2))
+        
 
     dataset = ds.NoisyDataset(t_label)
     data_loader = DataLoader(dataset, batch_size=1, shuffle=True)

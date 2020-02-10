@@ -46,7 +46,6 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             if ep_i % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
-                scheduler.step(loss)
                 optimizer.step()
                 optimizer.zero_grad()
         with torch.no_grad():
@@ -56,6 +55,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             net_input = net_input.to(cfg.device)
             net_output = model(net_input, y, phi)
             val_loss = loss_func(net_output*mask, rec*mask)
+            scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
 
@@ -109,7 +109,6 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
             if ep_i % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
             if (ep_i+1) % accumulation_steps == 0:
-                scheduler.step(loss)
                 optimizer.step()
                 optimizer.zero_grad()
         with torch.no_grad():
@@ -120,6 +119,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
             net_input = net_input.to(cfg.device)
             net_output = denoiser(net_input)
             val_loss = loss_func(net_output*mask, noisy*mask)
+            scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
             print("ep_i ", ep_i, "loss ", round(loss.item(), 5), "val loss ",
