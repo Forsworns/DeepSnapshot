@@ -23,7 +23,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     model = model.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.2)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, 2)
     loss_func = util.get_loss(cfg.l_name)
 
     with writer as w:
@@ -95,7 +95,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
     denoiser = get_denoiser(cfg.d_name, cfg.frame)
     denoiser = denoiser.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.2)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, 2)
     loss_func = util.get_loss(cfg.l_name)
 
     losses = []
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     parser.add_argument('--group', type=int, default=4)
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)
-    parser.add_argument('--learning_rate', type=float, default=0.0001)
+    parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--batch', type=int, default=8)
     parser.add_argument('--phase', type=int, default=1)

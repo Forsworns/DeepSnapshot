@@ -21,7 +21,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name, cfg.share)
     model = model.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.2)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, 2)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='interpolate')
 
@@ -87,7 +87,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
     denoiser = get_denoiser(cfg.d_name, cfg.frame)
     denoiser = denoiser.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.2)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, 2)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='interpolate')
 
