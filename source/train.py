@@ -39,7 +39,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
         data_loader = DataLoader(
-            dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
+            dataset, batch_size=cfg.batch, shuffle=True, drop_last=True)
         optimizer.zero_grad()
         for ep_i, batch in enumerate(data_loader):
             model.train()
@@ -66,7 +66,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             val_loss = val_loss.item()
             val_losses.append(val_loss)
 
-            print("ep_i ", ep_i, "loss ", loss.item(), "val loss ",
+            print("ep ", ep, "loss ", loss.item(), "val loss ",
                   val_loss, "lr", optimizer.param_groups[0]['lr'], "time ", time())
 
             if val_loss < best_val_loss:
@@ -105,7 +105,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
     accumulation_steps = cfg.poor
     for ep in range(cfg.epoch):
         data_loader = DataLoader(
-            dataset, batch_size=cfg.batch, shuffle=True, drop_last=True, num_workers=4)
+            dataset, batch_size=cfg.batch, shuffle=True, drop_last=True)
         optimizer.zero_grad()
         for ep_i, batch in enumerate(data_loader):
             denoiser.train()
@@ -158,8 +158,8 @@ if __name__ == "__main__":
     parser.add_argument('--name', default='Traffic')
     parser.add_argument('--restore', default=None)
     parser.add_argument('--manual', default=False)
-    parser.add_argument('--u_name', default='plain')
-    parser.add_argument('--d_name', default='sparse')
+    parser.add_argument('--u_name', default='ista')
+    parser.add_argument('--d_name', default='snet')
     parser.add_argument('--o_name', default='adam')
     parser.add_argument('--l_name', default='mse')
     parser.add_argument('--group', type=int, default=4)
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--batch', type=int, default=8)
-    parser.add_argument('--phase', type=int, default=1)
+    parser.add_argument('--phase', type=int, default=2)
     parser.add_argument('--share', type=bool, default=False)
     parser.add_argument('--poor', type=int, default=1)
     args = parser.parse_args()

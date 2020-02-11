@@ -2,9 +2,9 @@ import torch.nn as nn
 from denoisers.modules import default_conv
 
 
-class DnCNN(nn.Module):
+class DNet(nn.Module):
     def __init__(self, channel, conv=default_conv, layer_num=2):
-        super(DnCNN, self).__init__()
+        super(DNet, self).__init__()
         kernel_size = 3
         n_feat = 64
         layers = []

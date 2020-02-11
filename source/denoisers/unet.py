@@ -5,9 +5,9 @@ import torch.nn.functional as F
 from denoisers.modules import ConvBlock
 
 
-class Unet(nn.Module):
+class UNet(nn.Module):
     def __init__(self, channel, residual=False, down='conv', up='tconv', activation='selu'):
-        super(Unet, self).__init__()
+        super(UNet, self).__init__()
 
         self.residual = residual
 

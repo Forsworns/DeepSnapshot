@@ -1,10 +1,10 @@
 import torch.nn as nn
 from denoisers.modules import default_conv, NLResGroup, ResGroup
 
-
-class RNAN(nn.Module):
+# RNAN
+class RnaNet(nn.Module):
     def __init__(self, conv=default_conv):
-        super(RNAN, self).__init__()
+        super(RnaNet, self).__init__()
         n_resgroup = 10
         n_resblock = 16
         n_feats = 64

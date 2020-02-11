@@ -1,10 +1,10 @@
 import torch.nn as nn
 from denoisers.modules import default_conv, UpSampler, DownSampler, NRResBlock
 
-
-class NLRNN(nn.Module):
+# NLRNN
+class NlrNet(nn.Module):
     def __init__(self, channel, conv=default_conv, layer_num=1):
-        super(NLRNN, self).__init__()
+        super(NlrNet, self).__init__()
         kernel_size = 3
         n_feat = 64
         self.layer_num = layer_num

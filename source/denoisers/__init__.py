@@ -1,24 +1,15 @@
-from denoisers.babyunet import BabyUnet
-from denoisers.dncnn import DnCNN
-from denoisers.unet import Unet
-from denoisers.sparse import SparseNet
-from denoisers.nlrnn import NLRNN
-from denoisers.rnan import RNAN
-from denoisers.nlscale import NLScale
-
+import os
+import importlib
 
 def get_denoiser(name, channels, **kwargs):
-    if name == 'unet':
-        return Unet(channels)
-    if name == 'baby-unet':
-        return BabyUnet(channels)
-    if name == 'dncnn':
-        return DnCNN(channels)
-    if name == 'sparse':
-        return SparseNet(channels)
-    if name == 'nlrnn':
-        return NLRNN(channels)
-    if name == 'rnan':
-        return RNAN(channels)
-    if name == 'nlscale':
-        return NLScale(channels)
+    dir_name, _ = os.path.split(__file__)
+    files = os.listdir(dir_name)
+    for file in files:
+        if file.endswith("net.py"):
+            net_name = file.rstrip('.py')
+            if name == net_name:
+                module_name = "denoisers.{}".format(name) 
+                module = importlib.import_module(module_name)
+                class_name = "{}Net".format(name.title()[:-3])
+                cless = getattr(module,class_name)
+                return cless(channels)

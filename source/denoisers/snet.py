@@ -6,9 +6,9 @@ from denoisers.modules import default_conv
 # from xc
 
 
-class SparseNet(nn.Module):
+class SNet(nn.Module):
     def __init__(self, channel, conv=default_conv, **kwgs):
-        super(SparseNet, self).__init__()
+        super(SNet, self).__init__()
         n_feat = 64
         kernel_size = 3
         if 'pixel' in kwgs:
