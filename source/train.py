@@ -10,12 +10,12 @@ from torch.utils.data import DataLoader
 import torch
 import numpy as np
 # from torch.utils.tensorboard import SummaryWriter
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 from torch.optim import lr_scheduler
 
 
 def train_e2e(label, phi, t_label, t_phi, cfg):
-    writer = SummaryWriter()
+    # writer = SummaryWriter()
     dataset = ds.SnapshotDataset(phi, label)
     torch.manual_seed(int(time()) % 10)
 
@@ -26,10 +26,10 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, 2)
     loss_func = util.get_loss(cfg.l_name)
 
-    with writer as w:
-        dummy_x = torch.zeros_like(label[0].unsqueeze(0))
-        dummy_y = torch.zeros_like(label[0, 0].unsqueeze(0))
-        w.add_graph(model, (dummy_x, dummy_y, phi))
+    # with writer as w:
+    #     dummy_x = torch.zeros_like(label[0].unsqueeze(0))
+    #     dummy_y = torch.zeros_like(label[0, 0].unsqueeze(0))
+    #     w.add_graph(model, (dummy_x, dummy_y, phi))
 
     losses = []
     val_losses = []

@@ -39,3 +39,6 @@ one shot loss在降，但是图像质量提不了
 可以用tensorboard看一下网络结构！
 
 不要把常数初始化在__init__中，否则会混乱，分不清variable和constant
+
+non local 的内存占用太高，
+attention还行
