@@ -1,5 +1,7 @@
-import torch.nn as nn
 import sys
+
+import torch.nn as nn
+
 sys.path.append('../')
 
 
@@ -19,5 +21,5 @@ class Ista(nn.Module):
         x = self.denoiser(x)
         return x, y, phi
 
-    def initialize(self,phi):
+    def initialize(self, phi, cfg):
         return []

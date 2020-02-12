@@ -20,9 +20,10 @@ class Masker():
     def mask(self, X, i):
         phase_x = i % self.grid_size
         phase_y = (i // self.grid_size) % self.grid_size
-        if self.mask_3d: 
+        if self.mask_3d:
             phase_t = (i // (self.grid_size*self.grid_size)) % self.grid_size
-            mask = pixel_grid_mask(X.shape, self.grid_size, phase_x, phase_y, phase_t)
+            mask = pixel_grid_mask(
+                X.shape, self.grid_size, phase_x, phase_y, phase_t)
         else:
             mask = pixel_grid_mask(X.shape, self.grid_size, phase_x, phase_y)
         mask = mask.to(X.device)
@@ -85,7 +86,7 @@ def interpolate_mask(tensor, mask, mask_inv, channels):
     device = tensor.device
     mask = mask.to(device)
     kernel = np.array([[0.5, 1.0, 0.5], [1.0, 0.0, 1.0], [0.5, 1.0, 0.5]])
-    kernel = np.tile(kernel,(channels,1,1))
+    kernel = np.tile(kernel, (channels, 1, 1))
     kernel = kernel[np.newaxis, ...]
     kernel = torch.Tensor(kernel).to(device)
     kernel = kernel / kernel.sum()

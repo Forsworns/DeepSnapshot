@@ -1,5 +1,7 @@
 import torch.nn as nn
-from denoisers.modules import default_conv, UpSampler, DownSampler, NRResBlock
+
+from denoisers.modules import DownSampler, NRResBlock, UpSampler, default_conv
+
 
 # NLRNN
 class NlrNet(nn.Module):

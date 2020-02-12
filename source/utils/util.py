@@ -1,12 +1,47 @@
+import os
+from time import sleep, time
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.optim import Adam, SGD
-from torch.nn import MSELoss, L1Loss
-from torch.utils.data import Dataset
 from numpy import clip, exp
-import matplotlib.pyplot as plt
-from time import time, sleep
+from PIL import Image
+from skimage.measure import compare_psnr, compare_ssim
+from torch.nn import L1Loss, MSELoss
+from torch.optim import SGD, Adam
+from torch.utils.data import Dataset
+
+import utils.configs as config
+
+
+def save(model, psnr, reconstruction, label, args):
+    _, _, _, para_dir, recon_dir, model_dir = config.general(args.name)
+    save_model(model, model_dir, psnr)
+    args_dict = vars(args)
+    print(args_dict)
+    if "trainer" in args_dict:
+        args_dict.pop("trainer")
+    if "tester" in args_dict:
+        args_dict.pop("tester")
+    config_log = config.ConfigLog(args_dict)
+    config_log.dump(para_dir)
+
+    recon_dir = "{}/{}".format(recon_dir, int(time()))
+    if not os.path.exists(recon_dir):
+        os.makedirs(recon_dir)
+    for i in range(label.shape[0]):
+        for j in range(label.shape[1]):
+            PSNR = compare_psnr(label[i, j], reconstruction[i, j])
+            SSIM = compare_ssim(label[i, j], reconstruction[i, j])
+            print("Frame %d, PSNR: %.2f, SSIM: %.2f" %
+                  (i*args.frame+j, PSNR, SSIM))
+            outImg = np.hstack((label[i, j], reconstruction[i, j]))
+            imgRecName = "%s/frame%d_PSNR%.2f.png" % (
+                recon_dir, i*args.frame+j, PSNR)
+            imgRec = Image.fromarray(
+                np.clip(255*outImg, 0, 255).astype(np.uint8))
+            imgRec.save(imgRecName)
 
 
 def save_model(model, directory, psnr):

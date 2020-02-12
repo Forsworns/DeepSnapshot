@@ -1,5 +1,8 @@
 import torch.nn as nn
-from denoisers.modules import default_conv, UpSampler, DownSampler, ResBlock, ResGroup, NLResGroup
+
+from denoisers.modules import (DownSampler, NLResGroup, ResBlock, ResGroup,
+                               UpSampler, default_conv)
+
 
 # NL scale
 class NlsNet(nn.Module):

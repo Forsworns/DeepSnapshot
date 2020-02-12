@@ -1,13 +1,15 @@
-from utils import util
-import torch.nn as nn
 import sys
+
+import torch.nn as nn
+
+from utils import util
+
 sys.path.append('../')
 
 
 class Fista(nn.Module):
     def __init__(self, denoiser, step_size):
         super(Fista, self).__init__()
-        self.phi = phi
         self.denoiser = denoiser
         self.step_size = step_size
 
@@ -23,6 +25,6 @@ class Fista(nn.Module):
         x = self.denoiser(x)
         return x, y, phi, t
 
-    def initialize(self,phi):
+    def initialize(self, phi, cfg):
         t = 1
         return [t]

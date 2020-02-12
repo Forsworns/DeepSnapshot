@@ -1,28 +1,32 @@
 # one shot, different the other testcases, need to train during test
 import argparse
+import os
 from time import time
-import torch
+
 import numpy as np
-from skimage.measure import compare_ssim, compare_psnr
+import torch
+from PIL import Image
+from skimage.measure import compare_psnr, compare_ssim
+
+import utils.configs as config
+import utils.dataset as ds
+import utils.util as util
 from denoisers import get_denoiser
 from updaters import get_updater
-import utils.configs as config
-import utils.util as util
-import utils.dataset as ds
-from utils.mask import Masker
 from utils.end2end import End2end
-from PIL import Image
-import os
+from utils.mask import Masker
 
 
 def test_e2e(label, phi, cfg):
     y = label.mul(phi).sum(1)
     # util.show_tensors(y)
     y = y.to(cfg.device)
+    phi = phi.to(cfg.device)
+    label = label.to(cfg.device)
 
     torch.manual_seed(int(time()) % 10)
     if cfg.restore is None:
-        model = End2end(phi, cfg.phase, cfg.u_name, cfg.d_name, cfg.share)
+        model = End2end(phi, cfg)
         model = model.to(cfg.device)
         optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
         loss_func = util.get_loss(cfg.l_name)
@@ -58,16 +62,22 @@ def test_e2e(label, phi, cfg):
                     val_loss = val_loss.item()
                     val_losses.append(val_loss)
                     print("ep ", ep, "loss ", loss.item(), "val loss ",
-                        val_loss, "time ", time())
+                          val_loss, "time ", time())
 
                     if val_loss < best_val_loss:
                         best_val_loss = val_loss
                         best_img = np.clip(
                             net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                        best_psnr = compare_psnr(label.numpy(), best_img)
+                        best_psnr = compare_psnr(
+                            labelc.cpu().numpy(), best_img)
                         print("PSNR: ", np.round(best_psnr, 2))
     else:
-        model = load_model(cfg.restore)
+        model = End2end(phi, cfg)
+        print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+        model = model.to(cfg.device)
+        model.load_state_dict(torch.load(cfg.restore))
+        model.eval()
+        y = label.mul(phi).sum(1)
     rec = model(rec, y)
     return rec, model
 
@@ -75,6 +85,9 @@ def test_e2e(label, phi, cfg):
 
 
 def test_iterative(label, phi, cfg):
+    y = y.to(cfg.device)
+    phi = phi.to(cfg.device)
+    label = label.to(cfg.device)
     y = label.mul(phi).sum(1)
     # util.show_tensors(y)
     torch.manual_seed(int(time()) % 10)
@@ -105,7 +118,7 @@ def test_iterative(label, phi, cfg):
             loss = loss_func(net_output*mask, rec*mask)
             # util.show_tensors(net_output.detach().cpu())
             print("step: ", sp, "ep ", ep, "loss ", loss.item())
-            
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -122,12 +135,13 @@ def test_iterative(label, phi, cfg):
                     val_loss = val_loss.item()
                     val_losses.append(val_loss)
                     print("ep ", ep, "loss ", loss.item(), "val loss ",
-                        val_loss, "time ", time())
+                          val_loss, "time ", time())
 
                     if val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        best_img = np.clip(net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                        best_psnr = compare_psnr(label.numpy(), best_img)
+                        best_img = np.clip(
+                            net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
+                        best_psnr = compare_psnr(label.cpu().numpy(), best_img)
                         print("PSNR: ", np.round(best_psnr, 2))
 
         with torch.no_grad():
@@ -189,25 +203,4 @@ if __name__ == "__main__":
     t = end - start
     print("PSNR {},Time: {}".format(psnr, t))
 
-    util.save_model(model, model_dir, psnr)
-
-    args_dict = vars(args)
-    args_dict.pop('tester')
-    config_log = config.ConfigLog(args_dict)
-    config_log.dump(para_dir)
-
-    recon_dir = "{}/{}".format(recon_dir, int(time()))
-    if not os.path.exists(recon_dir):
-        os.makedirs(recon_dir)
-    for i in range(args.group):
-        for j in range(args.frame):
-            PSNR = compare_psnr(label[i, j], reconstruction[i, j])
-            SSIM = compare_ssim(label[i, j], reconstruction[i, j])
-            print("Frame %d, PSNR: %.2f, SSIM: %.2f" %
-                  (i*args.frame+j, PSNR, SSIM))
-            outImg = np.hstack((label[i, j], reconstruction[i, j]))
-            imgRecName = "%s/frame%d_PSNR%.2f.png" % (
-                recon_dir, i*args.frame+j, PSNR)
-            imgRec = Image.fromarray(
-                np.clip(255*outImg, 0, 255).astype(np.uint8))
-            imgRec.save(imgRecName)
+    util.save(model, psnr, reconstruction, label.cpu().numpy(), args)

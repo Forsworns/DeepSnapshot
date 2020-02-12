@@ -1,28 +1,35 @@
 import argparse
+import os
 from time import time
-from skimage.measure import compare_ssim, compare_psnr
+
+import numpy as np
+import torch
+from PIL import Image
+from skimage.measure import compare_psnr, compare_ssim
+
 import utils.configs as config
-import utils.util as util
 import utils.dataset as ds
+import utils.util as util
 from denoisers import get_denoiser
 from updaters import get_updater
 from utils.end2end import End2end
-import torch
-from PIL import Image
-import os
-import numpy as np
 
 
 def test_e2e(label, phi, cfg):
     y = label.mul(phi).sum(1)
     # util.show_tensors(y)
+    phi = phi.to(cfg.device)
+    label = label.to(cfg.device)
+    y = y.to(cfg.device)
     with torch.no_grad():
         rec = y.repeat(args.frame, 1, 1, 1).permute(
             1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-        model = End2end(phi, cfg.phase, cfg.step_size, cfg.u_name, cfg.d_name, cfg.share)
+        rec.to(cfg.device)
+        model = End2end(phi, cfg)
+        print(sum(p.numel() for p in model.parameters() if p.requires_grad))
         model.load_state_dict(torch.load(cfg.restore))
         model.eval()
-        rec = model(rec, y)
+        rec = model(rec, y, phi)
         return rec
 
 
@@ -30,11 +37,16 @@ def test_iterative(label, phi, cfg):
     y = label.mul(phi).sum(1)
     rec = y.repeat(args.frame, 1, 1, 1).permute(
         1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
+    phi = phi.to(cfg.device)
+    rec = rec.to(cfg.device)
+    y = y.to(cfg.device)
     with torch.no_grad():
         denoiser = get_denoiser(cfg.d_name, cfg.frame)
         denoiser.load_state_dict(torch.load(cfg.restore))
         denoiser.eval()
+        denoiser.to(cfg.device)
         updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
+        updater.to(cfg.device)
         params = [rec, y]
         params.extend(updater.initialize())
         for sp in range(cfg.steps):
@@ -57,13 +69,12 @@ if __name__ == "__main__":
     parser.add_argument('--restore', default=None)  # path
     parser.add_argument('--manual', type=bool, default=False)
     parser.add_argument('--u_name', default='fista')
-    parser.add_argument('--d_name', default='sparse')
-    parser.add_argument('--l_name', default='mse')
+    parser.add_argument('--d_name', default='snet')
+    parser.add_argument('--phase', type=int, default=5)
     parser.add_argument('--group', type=int, default=4)
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)
-    parser.add_argument('--phase', type=int, default=5)
-    parser.add_argument('--share', type=bool, default=False) 
+    parser.add_argument('--share', type=bool, default=False)
     parser.add_argument('--steps', type=int, default=20)  # ite
     parser.add_argument('--step_size', type=float, default=0.001)  # ite
     args = parser.parse_args()

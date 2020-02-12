@@ -9,7 +9,7 @@ class BabyuNet(nn.Module):
     def __init__(self, channel, width=16):
         super(BabyuNet, self).__init__()
         # down sample
-        self.pool1 = nn.MaxPool2d(kernel_size=2) 
+        self.pool1 = nn.MaxPool2d(kernel_size=2)
         self.pool2 = nn.MaxPool2d(kernel_size=2)
         # up sample
         self.up1 = lambda x: F.interpolate(

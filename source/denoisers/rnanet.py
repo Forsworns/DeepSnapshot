@@ -1,5 +1,7 @@
 import torch.nn as nn
-from denoisers.modules import default_conv, NLResGroup, ResGroup
+
+from denoisers.modules import NLResGroup, ResGroup, default_conv
+
 
 # RNAN
 class RnaNet(nn.Module):

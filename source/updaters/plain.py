@@ -1,5 +1,5 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 
 class Plain(nn.Module):
@@ -8,10 +8,10 @@ class Plain(nn.Module):
         self.denoiser = denoiser
         self.step_size = step_size
 
-    def forward(self,*params):
+    def forward(self, *params):
         x, y, phi = params
         x = self.denoiser(x)
         return x, y, phi
 
-    def initialize(self,phi):
+    def initialize(self, phi, cfg):
         return []

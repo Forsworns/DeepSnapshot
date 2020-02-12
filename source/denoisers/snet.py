@@ -1,6 +1,8 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+
 from denoisers.modules import default_conv
+
 # net is same as dncnn? only with a bias?
 
 # from xc
@@ -22,6 +24,7 @@ class SNet(nn.Module):
 
         padding = kernel_size//2
         stride = 1
+
         def conv_width(w): return (w+2*padding-kernel_size)/stride+1
         width = int(conv_width(conv_width(conv_width(pixel))))
         self.limit = nn.Parameter(torch.zeros(1), requires_grad=True)

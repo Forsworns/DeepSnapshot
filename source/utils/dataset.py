@@ -1,14 +1,17 @@
-import torch
-import scipy.io as sio
-import h5py
-from torch.utils.data import Dataset
 import os
+
+import h5py
 import numpy as np
+import scipy.io as sio
+import torch
+from torch.utils.data import Dataset
 
 # n x t x w x d
 
+
 def measure(img, phi):
     return img.mul(phi).sum(0)
+
 
 class SnapshotDataset(Dataset):
     def __init__(self, phi, labels, mode='train'):
@@ -24,7 +27,7 @@ class SnapshotDataset(Dataset):
         return img, measure(img, self.phi)
 
 
-def add_noise(img,sigma):
+def add_noise(img, sigma):
     return img + torch.randn(img.size())*sigma
 
 
@@ -39,9 +42,10 @@ class NoisyDataset(Dataset):
 
     def __getitem__(self, index):
         img = self.labels[index]
-        return img, add_noise(img,self.sigma)
+        return img, add_noise(img, self.sigma)
 
 # Load training data
+
 
 def load_train_data(train_file, mask_file, mat73=False):
     if mat73 == True:                                                # if .mat file is too big, use h5py to load
@@ -55,7 +59,7 @@ def load_train_data(train_file, mask_file, mat73=False):
     phi = mask_data['phi']                                            # mask
 
     del train_data, mask_data
-    return torch.from_numpy(train_label).permute(0,3,1,2), torch.from_numpy(phi).permute(2,0,1)
+    return torch.from_numpy(train_label).permute(0, 3, 1, 2), torch.from_numpy(phi).permute(2, 0, 1)
 
 # Load testing data
 
@@ -72,4 +76,4 @@ def load_test_data(test_file, mask_file, mat73=False):
     phi = mask_data['phi']
 
     del test_data, mask_data
-    return torch.from_numpy(test_label).permute(0,3,1,2), torch.from_numpy(phi).permute(2,0,1)
+    return torch.from_numpy(test_label).permute(0, 3, 1, 2), torch.from_numpy(phi).permute(2, 0, 1)

@@ -1,9 +1,9 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 
 class Gap(nn.Module):
-    def __init__(self,denoiser,step_size):
+    def __init__(self, denoiser, step_size):
         super(Gap, self).__init__()
         self.denoiser = denoiser
         self.step_size = step_size
@@ -15,8 +15,8 @@ class Gap(nn.Module):
         phi_sum = phi.sum(0)
         # accelerated version
         delta_y = delta_y + (delta_y - y_t)
-        residual = (delta_y-y_t).repeat(frame,1,1,1).permute(1,0,2,3)
-        delta_x = self.step_size*residual.mul(phi.detach()).div(phi_sum+0.0001) 
+        residual = (delta_y-y_t).repeat(frame, 1, 1, 1).permute(1, 0, 2, 3)
+        delta_x = self.step_size*residual.mul(phi.detach()).div(phi_sum+0.0001)
         # normal version
         # residual = (y-y_t).repeat(frame,1,1,1).permute(1,0,2,3)
         # delta_x = self.step_size*residual.mul(phi.detach()).div(phi_sum+0.0001)
@@ -24,7 +24,6 @@ class Gap(nn.Module):
         x = self.denoiser(x)
         return x, y, phi, delta_y
 
-    def initialize(self,phi):
-        delta_y = torch.zeros_like(phi)
+    def initialize(self, phi, cfg):
+        delta_y = torch.zeros(phi.shape[1], phi.shape[2], device=cfg.device)
         return [delta_y]
-
