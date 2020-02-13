@@ -9,5 +9,5 @@ class Admm(nn.Module):
         x, = params
         return x,
 
-    def initialize(self):
+    def initialize(self, phi, cfg):
         return []
