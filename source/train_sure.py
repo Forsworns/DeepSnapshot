@@ -17,9 +17,10 @@ from utils.end2end import End2end
 
 
 # use sure loss
-def train_e2e(label, phi, t_label, t_phi, cfg):
+def train(label, phi, t_label, t_phi, cfg):
     # writer = SummaryWriter()
     dataset = ds.SnapshotDataset(phi, label)
+    t_dataset = ds.SnapshotDataset(t_phi, t_label)
 
     phi = phi.to(cfg.device)
     model = End2end(phi, cfg)
@@ -44,7 +45,15 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
         data_loader = DataLoader(
             dataset, batch_size=cfg.batch, shuffle=True, drop_last=True)
         optimizer.zero_grad()
-        last_batch = len(data_loader) // cfg.batch - 1
+
+        data_loader = iter(data_loader)
+        v_label, v_y = next(data_loader)
+        v_initial = v_y.repeat(args.frame, 1, 1, 1).permute(
+            1, 0, 2, 3).mul(phi.cpu()).div(phi.cpu().sum(0)+0.0001)
+        v_initial = v_initial.to(cfg.device)
+        v_y = v_y.to(cfg.device)
+        v_label = v_label.to(cfg.device)
+
         for ep_i, batch in enumerate(data_loader):
             label, y = batch
             initial = y.repeat(args.frame, 1, 1, 1).permute(
@@ -52,12 +61,9 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
             initial = initial.to(cfg.device)
             y = y.to(cfg.device)
             label = label.to(cfg.device)
-            if ep_i == last_batch:
-                break
             model.train()
             net_output = model(initial, y, phi)
-
-            loss = loss_func(net_output, initial)/accumulation_steps
+            loss = loss_func(net_output, initial)/accumulation_steps + sure_loss
             loss.backward()
             real_loss = loss_func(net_output, label)/accumulation_steps
             if (ep_i+1) % accumulation_steps == 0:
@@ -68,14 +74,15 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
         with torch.no_grad():
             losses.append(loss.item())
             model.eval()
-            net_output = model(initial, y, phi)
-            val_loss = loss_func(net_output, label)
+            net_output = model(v_initial, v_y, phi)
+            val_loss = loss_func(net_output, v_label) + sure_loss
+            real_val_loss = loss_func(net_output, v_label).item()
             scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
 
             print("ep ", ep, "loss ", loss.item(), "val loss ",
-                  val_loss, "lr", optimizer.param_groups[0]['lr'], "time ", time())
+                  val_loss, "lr", "real val loss", real_val_loss.item(), optimizer.param_groups[0]['lr'], "time ", time())
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -85,10 +92,16 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
                 print("PSNR: ", np.round(best_psnr, 2))
                 util.save(model, best_psnr, best_img, label.cpu().numpy(), cfg)
 
-    dataset = ds.SnapshotDataset(t_phi, t_label)
+
+    '''
+            
+'''
+
+    
+
     t_phi = t_phi.to(cfg.device)
     data_loader = DataLoader(
-        dataset, batch_size=t_label.shape[0], shuffle=True)
+        t_dataset, batch_size=t_label.shape[0], shuffle=True)
     label, y = next(iter(data_loader))
     initial = y.repeat(args.frame, 1, 1, 1).permute(
         1, 0, 2, 3).mul(t_phi.cpu()).div(t_phi.cpu().sum(0)+0.0001)
