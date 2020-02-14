@@ -441,9 +441,10 @@ def getfreegpumem(id):
 
 def getbestgpu():
     freememlist = []
-    freemem = getfreegpumem(0)
-    print("GPU device has %d MiB left." % (freemem))
-    freememlist.append(freemem)
+    for id in range(4):
+        freemem = getfreegpumem(id)
+        print("GPU device %d has %d MiB left." % (id, freemem))
+        freememlist.append(freemem)
     idbest = freememlist.index(max(freememlist))
     print("--> GPU device %d was chosen" % idbest)
     return idbest
