@@ -136,7 +136,10 @@ if __name__ == "__main__":
     train_file, test_file, mask_file, _, _, _ = config.general(
         args.name)
     t_label, t_phi = ds.load_test_data(test_file, mask_file, False)
-    label, phi = ds.load_train_data(train_file, mask_file, False)
+    if args.name == "Traffic":
+        label, phi = ds.load_train_data(train_file, mask_file, False)
+    else:
+        label, phi = ds.load_train_data(train_file, mask_file, True)
     print(label.shape)
 
     start = time()

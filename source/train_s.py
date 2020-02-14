@@ -205,8 +205,11 @@ if __name__ == "__main__":
 
     train_file, test_file, mask_file, para_dir, recon_dir, model_dir = config.general(
         args.name)
-    label, phi = ds.load_train_data(train_file, mask_file, True)
-    t_label, t_phi = ds.load_train_data(test_file, mask_file, True)
+    t_label, t_phi = ds.load_test_data(test_file, mask_file, False)
+    if args.name == "Traffic":
+        label, phi = ds.load_train_data(train_file, mask_file, False)
+    else:
+        label, phi = ds.load_train_data(train_file, mask_file, True)
     print(label.shape)
     start = time()
     model, psnr, reconstruction = args.trainer(

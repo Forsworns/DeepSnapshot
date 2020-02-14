@@ -199,11 +199,11 @@ if __name__ == "__main__":
 
     train_file, test_file, mask_file, _, _, _ = config.general("Kobe")
     t_label, t_phi = ds.load_test_data(test_file, mask_file, False)
-    label, phi = ds.load_train_data(train_file, mask_file, False)
+    label, phi = ds.load_train_data(train_file, mask_file, True)
 
     train_file, test_file, mask_file, _, _, _ = config.general("Park")
     t_label_t, _ = ds.load_test_data(test_file, mask_file, False)
-    label_t, _ = ds.load_train_data(train_file, mask_file, False)
+    label_t, _ = ds.load_train_data(train_file, mask_file, True)
 
     label = torch.cat([label,label_t])
     t_label = torch.cat([t_label,t_label_t])
