@@ -22,23 +22,23 @@ def test_e2e(label, phi, cfg):
     label = label.to(cfg.device)
     y = y.to(cfg.device)
     with torch.no_grad():
-        rec = y.repeat(args.frame, 1, 1, 1).permute(
+        initial = y.repeat(args.frame, 1, 1, 1).permute(
             1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-        rec.to(cfg.device)
+        initial.to(cfg.device)
         model = End2end(phi, cfg)
         print(sum(p.numel() for p in model.parameters() if p.requires_grad))
         model.load_state_dict(torch.load(cfg.restore))
         model.eval()
-        rec = model(rec, y, phi)
-        return rec
+        initial = model(initial, y, phi)
+        return initial
 
 
 def test_iterative(label, phi, cfg):
     y = label.mul(phi).sum(1)
-    rec = y.repeat(args.frame, 1, 1, 1).permute(
+    initial = y.repeat(args.frame, 1, 1, 1).permute(
         1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
     phi = phi.to(cfg.device)
-    rec = rec.to(cfg.device)
+    initial = initial.to(cfg.device)
     y = y.to(cfg.device)
     with torch.no_grad():
         denoiser = get_denoiser(cfg.d_name, cfg.frame)
@@ -47,7 +47,7 @@ def test_iterative(label, phi, cfg):
         denoiser.to(cfg.device)
         updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
         updater.to(cfg.device)
-        params = [rec, y]
+        params = [initial, y]
         params.extend(updater.initialize())
         for sp in range(cfg.steps):
             params = updater(*params)

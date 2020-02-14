@@ -28,7 +28,7 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     model = model.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, 2)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, cfg.scheduler)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='interpolate')
 
@@ -49,18 +49,18 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
         last_batch = len(data_loader) // cfg.batch - 1
         for ep_i, batch in enumerate(data_loader):
             label, y = batch
-            rec = y.repeat(args.frame, 1, 1, 1).permute(
+            initial = y.repeat(args.frame, 1, 1, 1).permute(
                 1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-            rec = rec.to(cfg.device)
+            initial = initial.to(cfg.device)
             y = y.to(cfg.device)
             label = label.to(cfg.device)
             if ep_i == last_batch:
                 break
-            net_input, mask = masker.mask(rec, ep_i % (masker.n_masks - 1))
+            net_input, mask = masker.mask(initial, ep_i % (masker.n_masks - 1))
             net_input = net_input.to(cfg.device)
             model.train()
             net_output = model(net_input, y, phi)
-            loss = loss_func(net_output*mask, noisy*mask)/accumulation_steps
+            loss = loss_func(net_output*mask, initial*mask)/accumulation_steps
             loss.backward()
             if (ep_i+1) % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
@@ -70,10 +70,10 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
         with torch.no_grad():
             losses.append(loss.item())
             model.eval()
-            net_input, mask = masker.mask(rec, (ep_i+1) % (masker.n_masks - 1))
+            net_input, mask = masker.mask(initial, (ep_i+1) % (masker.n_masks - 1))
             net_input = net_input.to(cfg.device)
             net_output = model(net_input, y, phi)
-            val_loss = loss_func(net_output*mask, rec*mask)
+            val_loss = loss_func(net_output*mask, initial*mask)
             scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
@@ -93,11 +93,11 @@ def train_e2e(label, phi, t_label, t_phi, cfg):
     t_phi = t_phi.to(cfg.device)
     data_loader = DataLoader(dataset, batch_size=1, shuffle=True)
     label, y = next(iter(data_loader))
-    rec = y.repeat(args.frame, 1, 1, 1).permute(
+    initial = y.repeat(args.frame, 1, 1, 1).permute(
         1, 0, 2, 3).mul(t_phi.cpu()).div(t_phi.cpu().sum(0)+0.0001)
-    rec = rec.to(cfg.device)
+    initial = initial.to(cfg.device)
     y = y.to(cfg.device)
-    net_output = model(rec, y, phi).detach().cpu().numpy()
+    net_output = model(initial, y, phi).detach().cpu().numpy()
     psnr = compare_psnr(label.numpy(), np.clip(
         net_output, 0, 1).astype(np.float64))
     return model, psnr, net_output
@@ -110,7 +110,7 @@ def train_denoiser(label, phi, t_label, t_phi, cfg):
     denoiser = get_denoiser(cfg.d_name, cfg.frame)
     denoiser = denoiser.to(cfg.device)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, 2)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 0.5, cfg.scheduler)
     loss_func = util.get_loss(cfg.l_name)
     masker = Masker(width=4, mode='interpolate')
 
@@ -194,6 +194,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch', type=int, default=2)
     parser.add_argument('--phase', type=int, default=1)
     parser.add_argument('--share', type=bool, default=False)
+    parser.add_argument('scheduler',type=int, default=5)
     args = parser.parse_args()
 
     if args.use_gpu:

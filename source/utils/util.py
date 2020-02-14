@@ -441,7 +441,9 @@ def getfreegpumem(id):
 
 def getbestgpu():
     freememlist = []
-    for id in range(4):
+    gpu_amount = int(gpuinfo(0)['Attached GPUs'])
+    print("%d GPU in total." % gpu_amount)
+    for id in range(gpu_amount):
         freemem = getfreegpumem(id)
         print("GPU device %d has %d MiB left." % (id, freemem))
         freememlist.append(freemem)
