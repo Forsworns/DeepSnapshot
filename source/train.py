@@ -188,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument('--phase', type=int, default=2)
     parser.add_argument('--share', type=bool, default=False)
     parser.add_argument('--poor', type=int, default=1)
-    parser.add_argument('scheduler',type=int, default=5)
+    parser.add_argument('--scheduler',type=int, default=5)
     args = parser.parse_args()
 
     if args.use_gpu:

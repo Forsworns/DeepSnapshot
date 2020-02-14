@@ -124,7 +124,7 @@ if __name__ == "__main__":
     parser.add_argument('--poor', type=int, default=1)
     parser.add_argument('--lambda',type=float, default=0.01)
     parser.add_argument('--epsilon',type=float, default=0.001)
-    parser.add_argument('scheduler',type=int, default=5)
+    parser.add_argument('--scheduler',type=int, default=5)
     args = parser.parse_args()
 
     if args.use_gpu:
