@@ -1,10 +1,12 @@
+import torch
 import torch.nn as nn
 
-from denoisers.modules import default_conv
+from denoisers.modules import GatedConv
 
+# gated conv
 
-class DNet(nn.Module):
-    def __init__(self, channel, conv=default_conv, layer_num=3):
+class GNet(nn.Module):
+    def __init__(self, channel, conv=GatedConv, layer_num=3):
         super(DNet, self).__init__()
         kernel_size = 3
         n_feat = 64

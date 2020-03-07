@@ -8,7 +8,6 @@ import torch.nn.functional as F
 from numpy import clip, exp
 from PIL import Image
 from skimage.measure import compare_psnr, compare_ssim
-from torch.nn import L1Loss, MSELoss
 from torch.optim import SGD, Adam
 from torch.utils.data import Dataset
 
@@ -54,13 +53,6 @@ def get_optimizer(o_name, model, lr):
         return Adam(model.parameters(), lr)
     elif o_name == 'sgd':
         return SGD(model.parameters(), lr)
-
-
-def get_loss(l_name):
-    if l_name == 'mse':
-        return MSELoss()
-    elif l_name == 'l1':
-        return L1Loss()
 
 
 def expand(x, r):

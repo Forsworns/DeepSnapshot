@@ -4,7 +4,7 @@ from denoisers.modules import ResGroup, default_conv
 
 
 class ANet(nn.Module):
-    def __init__(self, channels, features=64, num_of_layers=3, conv=default_conv):
+    def __init__(self, channels, features=64, num_of_layers=4, conv=default_conv):
         super(ANet, self).__init__()
         kernel_size = 3
         layers = []

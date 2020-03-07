@@ -68,7 +68,7 @@ def train(label, phi, t_label, t_phi, cfg):
             net_input = net_input.to(cfg.device)
             model.train()
             net_output = model(net_input, y, phi)
-            loss = loss_func(net_output*mask, initial*mask)/accumulation_steps
+            loss = loss_func(net_output*mask, initial*mask)
             loss.backward()
             if (ep_i+1) % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
