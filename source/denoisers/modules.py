@@ -16,8 +16,9 @@ def default_conv(in_channels, out_channels, kernel_size, bias=True):
 
 class GatedConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, bias=True):
+        super(GatedConv, self).__init__()
         self.gate = default_conv(in_channels, out_channels, kernel_size, bias)
-        self.act1 = nn.Relu()
+        self.act1 = nn.ReLU()
         self.gate = default_conv(in_channels, out_channels, kernel_size, bias)
         self.act2 = nn.Sigmoid()
 
