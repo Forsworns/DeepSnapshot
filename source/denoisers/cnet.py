@@ -115,7 +115,7 @@ class FineGenerator(nn.Module):
         self.allconv16 = gen_conv(cnum, cnum//2, 3, 1, 1)
         self.allconv17 = gen_conv(cnum//2, input_dim, 3, 1, 1, activation='none')
 
-    def forward(self, xin, x_stage1, mask):
+    def forward(self, xin, x_stage1):
         # conv branch
         x = self.conv1(x_stage1)
         x = self.conv2_downsample(x)

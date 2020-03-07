@@ -243,6 +243,7 @@ class ContextualAttention(nn.Module):
         Returns:
             torch.tensor: output
         """
+        device = f.device
         # get shapes
         raw_int_fs = list(f.size())   # b*c*h*w
         raw_int_bs = list(b.size())   # b*c*h*w
@@ -281,6 +282,7 @@ class ContextualAttention(nn.Module):
         # process mask
         if mask is None:
             mask = torch.zeros([int_bs[0], 1, int_bs[2], int_bs[3]])
+            mask = mask.to(device)
         else:
             mask = F.interpolate(mask, scale_factor=1. /
                                  (4*self.rate), mode='nearest')
@@ -304,6 +306,7 @@ class ContextualAttention(nn.Module):
         k = self.fuse_k
         scale = self.softmax_scale    # to fit the PyTorch tensor image value range
         fuse_weight = torch.eye(k).view(1, 1, k, k)  # 1*1*k*k
+        fuse_weight = fuse_weight.to(device)
 
         for xi, wi, raw_wi in zip(f_groups, w_groups, raw_w_groups):
             '''
@@ -315,6 +318,7 @@ class ContextualAttention(nn.Module):
             '''
             # conv for compare
             escape_NaN = torch.FloatTensor([1e-4])
+            escape_NaN = escape_NaN.to(device)
             wi = wi[0]  # [L, C, k, k]
             max_wi = torch.max(torch.sqrt(reduce_sum(torch.pow(wi, 2),
                                                      axis=[1, 2, 3],
@@ -381,6 +385,7 @@ class ContextualAttention(nn.Module):
         w_add = torch.arange(int_fs[3]).view(
             [1, 1, 1, int_fs[3]]).expand(int_fs[0], -1, int_fs[2], -1)
         ref_coordinate = torch.cat([h_add, w_add], dim=1)
+        ref_coordinate = ref_coordinate.to(device)
 
         offsets = offsets - ref_coordinate
         # flow = pt_flow_to_image(offsets)
@@ -388,6 +393,7 @@ class ContextualAttention(nn.Module):
         flow = torch.from_numpy(flow_to_image(
             offsets.permute(0, 2, 3, 1).cpu().data.numpy())) / 255.
         flow = flow.permute(0, 3, 1, 2)
+        flow = flow.to(device)
         # case2: visualize which pixels are attended
         # flow = torch.from_numpy(highlight_flow((offsets * mask.long()).cpu().data.numpy()))
 
