@@ -1,5 +1,5 @@
 import math
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -188,35 +188,6 @@ def extract_image_patches(images, ksizes, strides, rates, padding='same'):
     return patches  # [N, C*k*k, L], L is the total number of such blocks
 
 
-def flow_to_image(flow):
-    """Transfer flow map to image.
-    Part of code forked from flownet.
-    """
-    out = []
-    maxu = -999.
-    maxv = -999.
-    minu = 999.
-    minv = 999.
-    maxrad = -1
-    for i in range(flow.shape[0]):
-        u = flow[i, :, :, 0]
-        v = flow[i, :, :, 1]
-        idxunknow = (abs(u) > 1e7) | (abs(v) > 1e7)
-        u[idxunknow] = 0
-        v[idxunknow] = 0
-        maxu = max(maxu, np.max(u))
-        minu = min(minu, np.min(u))
-        maxv = max(maxv, np.max(v))
-        minv = min(minv, np.min(v))
-        rad = np.sqrt(u ** 2 + v ** 2)
-        maxrad = max(maxrad, np.max(rad))
-        u = u / (maxrad + np.finfo(float).eps)
-        v = v / (maxrad + np.finfo(float).eps)
-        img = compute_color(u, v)
-        out.append(img)
-    return np.float32(np.uint8(out))
-
-
 class ContextualAttention(nn.Module):
     def __init__(self, ksize=3, stride=1, rate=1, fuse_k=3, softmax_scale=10,
                  fuse=False):
@@ -379,29 +350,7 @@ class ContextualAttention(nn.Module):
         offsets = torch.cat(offsets, dim=0)
         offsets = offsets.view(int_fs[0], 2, *int_fs[2:])
 
-        # case1: visualize optical flow: minus current position
-        h_add = torch.arange(int_fs[2]).view(
-            [1, 1, int_fs[2], 1]).expand(int_fs[0], -1, -1, int_fs[3])
-        w_add = torch.arange(int_fs[3]).view(
-            [1, 1, 1, int_fs[3]]).expand(int_fs[0], -1, int_fs[2], -1)
-        ref_coordinate = torch.cat([h_add, w_add], dim=1)
-        ref_coordinate = ref_coordinate.to(device)
-
-        offsets = offsets - ref_coordinate
-        # flow = pt_flow_to_image(offsets)
-
-        flow = torch.from_numpy(flow_to_image(
-            offsets.permute(0, 2, 3, 1).cpu().data.numpy())) / 255.
-        flow = flow.permute(0, 3, 1, 2)
-        flow = flow.to(device)
-        # case2: visualize which pixels are attended
-        # flow = torch.from_numpy(highlight_flow((offsets * mask.long()).cpu().data.numpy()))
-
-        if self.rate != 1:
-            flow = F.interpolate(
-                flow, scale_factor=self.rate*4, mode='nearest')
-
-        return y, flow
+        return y, offsets
 
 # RNAN modules
 # residual attention + downscale upscale + denoising
