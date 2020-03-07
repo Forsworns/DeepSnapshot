@@ -32,7 +32,7 @@ def test_e2e(label, phi, cfg):
         initial = model(initial, y, phi)
         return initial
 
-'''
+
 def test_iterative(label, phi, cfg):
     y = label.mul(phi).sum(1)
     initial = y.repeat(args.frame, 1, 1, 1).permute(
@@ -54,7 +54,7 @@ def test_iterative(label, phi, cfg):
             print("sp ", sp, "PSNR ", compare_psnr(label.numpy(),
                                                    np.clip(params[0].detach().cpu().numpy(), 0, 1)))
         return params[0]
-'''
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

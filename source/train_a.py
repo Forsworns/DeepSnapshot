@@ -63,8 +63,9 @@ def train(label, phi, t_label, t_phi, cfg):
             y = y.to(cfg.device)
             label = label.to(cfg.device)
             model.train()
-            net_output = model(initial, y, phi)
-            loss = loss_func(net_output, label)
+            layers = model(initial, y, phi)
+            net_output = layers[-1]
+            loss = loss_func(layers, label)
             loss.backward()
             if (ep_i+1) % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
@@ -74,8 +75,9 @@ def train(label, phi, t_label, t_phi, cfg):
         with torch.no_grad():
             losses.append(loss.item())
             model.eval()
-            net_output = model(v_initial, v_y, phi)
-            val_loss = loss_func(net_output, v_label)
+            v_layers = model(v_initial, v_y, phi)
+            net_output = v_layers[-1]
+            val_loss = loss_func(v_layers, v_label)
             scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
@@ -87,9 +89,9 @@ def train(label, phi, t_label, t_phi, cfg):
                 best_val_loss = val_loss
                 best_img = np.clip(
                     net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(label.cpu().numpy(), best_img)
+                best_psnr = compare_psnr(v_label.cpu().numpy(), best_img)
                 print("PSNR: ", np.round(best_psnr, 2))
-                util.save(model, best_psnr, best_img, label.cpu().numpy(), cfg)
+                util.save(model, best_psnr, best_img, v_label.cpu().numpy(), cfg)
 
     t_phi = t_phi.to(cfg.device)
     data_loader = DataLoader(

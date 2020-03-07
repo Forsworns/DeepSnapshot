@@ -31,8 +31,10 @@ class End2end(nn.Module):
         self.initial_params = updater.initialize(phi, cfg)
 
     def forward(self, x, y, phi):
+        layers = []
         params = [x, y, phi]
         params.extend(self.initial_params)
         for l in self.layers:
             params = l(*params)
-        return params[0]
+            layers.append(params[0])
+        return layers

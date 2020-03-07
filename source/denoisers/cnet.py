@@ -16,7 +16,7 @@ class CNet(nn.Module):
     def forward(self, x):
         x_stage1 = self.coarse_generator(x)
         x_stage2, offset_flow = self.fine_generator(x, x_stage1)
-        return x_stage1, x_stage2, offset_flow
+        return x_stage2
 
 
 class CoarseGenerator(nn.Module):

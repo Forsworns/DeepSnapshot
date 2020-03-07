@@ -96,9 +96,9 @@ def train(label, phi, t_label, t_phi, cfg):
                 best_val_loss = val_loss
                 best_img = np.clip(
                     net_output.detach().cpu().numpy(), 0, 1).astype(np.float64)
-                best_psnr = compare_psnr(label.numpy(), best_img)
+                best_psnr = compare_psnr(v_label.numpy(), best_img)
                 print("PSNR: ", np.round(best_psnr, 2))
-                util.save(model, best_psnr, best_img, label.cpu().numpy(), cfg)
+                util.save(model, best_psnr, best_img, v_label.cpu().numpy(), cfg)
 
     dataset = ds.SnapshotDataset(t_phi, t_label)
     t_phi = t_phi.to(cfg.device)
