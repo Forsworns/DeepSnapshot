@@ -13,6 +13,7 @@ import utils.configs as config
 import utils.dataset as ds
 import utils.util as util
 from denoisers import get_denoiser
+from losses import get_loss
 from utils.end2end import End2end
 
 
@@ -28,7 +29,7 @@ def train(label, phi, t_label, t_phi, cfg):
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'min', 0.5, cfg.scheduler)
-    loss_func = util.get_loss(cfg.l_name)
+    loss_func = get_loss(cfg.l_name)
 
     # with writer as w:
     #     dummy_x = torch.zeros_like(label[0].unsqueeze(0))

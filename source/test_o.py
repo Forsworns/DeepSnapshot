@@ -13,6 +13,7 @@ import utils.dataset as ds
 import utils.util as util
 from denoisers import get_denoiser
 from updaters import get_updater
+from losses import get_loss
 from utils.end2end import End2end
 from utils.mask import Masker
 
@@ -29,7 +30,7 @@ def test_e2e(label, phi, cfg):
         model = End2end(phi, cfg)
         model = model.to(cfg.device)
         optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
-        loss_func = util.get_loss(cfg.l_name)
+        loss_func = get_loss(cfg.l_name)
         masker = Masker(frame=cfg.frame, width=4, mode='interpolate')
 
         losses = []
@@ -95,7 +96,7 @@ def test_iterative(label, phi, cfg):
     denoiser = denoiser.to(cfg.device)
     updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
     optimizer = util.get_optimizer(cfg.o_name, denoiser, cfg.learning_rate)
-    loss_func = util.get_loss(cfg.l_name)
+    loss_func = get_loss(cfg.l_name)
     masker = Masker(width=4, mode='zero')
 
     losses = []
