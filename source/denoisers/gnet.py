@@ -7,7 +7,7 @@ from denoisers.modules import GatedConv
 
 class GNet(nn.Module):
     def __init__(self, channel, conv=GatedConv, layer_num=3):
-        super(DNet, self).__init__()
+        super(GNet, self).__init__()
         kernel_size = 3
         n_feat = 64
         layers = []
