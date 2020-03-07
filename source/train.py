@@ -13,7 +13,7 @@ import utils.configs as config
 import utils.dataset as ds
 import utils.util as util
 from denoisers import get_denoiser
-from losses import get_losses
+from losses import get_loss
 from utils.end2end import End2end
 
 
