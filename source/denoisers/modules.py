@@ -22,12 +22,13 @@ class GatedConv(nn.Module):
         self.gate = default_conv(in_channels, out_channels, kernel_size, bias)
         self.act2 = nn.Sigmoid()
 
-    def foward(self, x):
+    def forward(self, x):
         feat = self.conv(x)
         feat = self.act1(feat)
         gate = self.gate(x)
         gate = self.act2(gate)
-        return feat.mul(gate)
+        out = feat.mul(gate)
+        return out
 
 # contextual
 def gen_conv(input_dim, output_dim, kernel_size=3, stride=1, padding=0, rate=1,
