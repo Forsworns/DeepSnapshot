@@ -25,8 +25,6 @@ class SNet(nn.Module):
         padding = kernel_size//2
         stride = 1
 
-        def conv_width(w): return (w+2*padding-kernel_size)/stride+1
-        width = int(conv_width(conv_width(conv_width(pixel))))
         self.limit = nn.Parameter(torch.zeros(1), requires_grad=True)
         self.threshold = lambda x: torch.mul(torch.sign(
             x), nn.functional.relu(torch.abs(x) - self.limit))
