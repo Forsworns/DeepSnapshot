@@ -22,7 +22,7 @@ class CoarseGenerator(nn.Module):
     def __init__(self, input_dim, cnum):
         super(CoarseGenerator, self).__init__()
 
-        self.conv1 = gen_conv(input_dim + 2, cnum, 5, 1, 2)
+        self.conv1 = gen_conv(input_dim, cnum, 5, 1, 2)
         self.conv2_downsample = gen_conv(cnum, cnum*2, 3, 2, 1)
         self.conv3 = gen_conv(cnum*2, cnum*2, 3, 1, 1)
         self.conv4_downsample = gen_conv(cnum*2, cnum*4, 3, 2, 1)
@@ -78,7 +78,7 @@ class FineGenerator(nn.Module):
         super(FineGenerator, self).__init__()
 
         # 3 x 256 x 256
-        self.conv1 = gen_conv(input_dim + 2, cnum, 5, 1, 2)
+        self.conv1 = gen_conv(input_dim, cnum, 5, 1, 2)
         self.conv2_downsample = gen_conv(cnum, cnum, 3, 2, 1)
         # cnum*2 x 128 x 128
         self.conv3 = gen_conv(cnum, cnum*2, 3, 1, 1)
@@ -94,7 +94,7 @@ class FineGenerator(nn.Module):
 
         # attention branch
         # 3 x 256 x 256
-        self.pmconv1 = gen_conv(input_dim + 2, cnum, 5, 1, 2)
+        self.pmconv1 = gen_conv(input_dim, cnum, 5, 1, 2)
         self.pmconv2_downsample = gen_conv(cnum, cnum, 3, 2, 1)
         # cnum*2 x 128 x 128
         self.pmconv3 = gen_conv(cnum, cnum*2, 3, 1, 1)
