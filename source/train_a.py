@@ -122,6 +122,7 @@ if __name__ == "__main__":
     parser.add_argument('--d_name', default='snet')
     parser.add_argument('--o_name', default='adam')
     parser.add_argument('--l_name', default='mse')
+    parser.add_argument('--l_layer', type=float, default=0.2)
     parser.add_argument('--group', type=int, default=4)
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)
