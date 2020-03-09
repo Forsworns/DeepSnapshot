@@ -101,7 +101,8 @@ def train(label, phi, t_label, t_phi, cfg):
         1, 0, 2, 3).mul(t_phi.cpu()).div(t_phi.cpu().sum(0)+0.0001)
     initial = initial.to(cfg.device)
     y = y.to(cfg.device)
-    net_output = model(initial, y, t_phi).detach().cpu().numpy()
+    layers = model(initial, y, t_phi)
+    net_output = layers[-1].detach().cpu().numpy()
     psnr = compare_psnr(label.numpy(), np.clip(
         net_output, 0, 1).astype(np.float64))
     return model, psnr, net_output

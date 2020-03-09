@@ -29,8 +29,8 @@ def test_e2e(label, phi, cfg):
         print(sum(p.numel() for p in model.parameters() if p.requires_grad))
         model.load_state_dict(torch.load(cfg.restore))
         model.eval()
-        initial = model(initial, y, phi)
-        return initial
+        layers = model(initial, y, phi)
+        return layers[-1]
 
 
 def test_iterative(label, phi, cfg):
