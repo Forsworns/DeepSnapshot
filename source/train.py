@@ -42,19 +42,18 @@ def train(label, phi, t_label, t_phi, cfg):
     best_psnr = 0
 
     accumulation_steps = cfg.poor
+
+    data_loader = DataLoader(
+        dataset, batch_size=cfg.batch, shuffle=True, drop_last=True)
+    data_loader = iter(data_loader)
+    v_label, v_y = next(data_loader)
+    v_initial = v_y.repeat(args.frame, 1, 1, 1).permute(
+        1, 0, 2, 3).mul(phi.cpu()).div(phi.cpu().sum(0)+0.0001)
+    v_initial = v_initial.to(cfg.device)
+    v_y = v_y.to(cfg.device)
+    v_label = v_label.to(cfg.device)
     for ep in range(cfg.epoch):
-        data_loader = DataLoader(
-            dataset, batch_size=cfg.batch, shuffle=True, drop_last=True)
         optimizer.zero_grad()
-
-        data_loader = iter(data_loader)
-        v_label, v_y = next(data_loader)
-        v_initial = v_y.repeat(args.frame, 1, 1, 1).permute(
-            1, 0, 2, 3).mul(phi.cpu()).div(phi.cpu().sum(0)+0.0001)
-        v_initial = v_initial.to(cfg.device)
-        v_y = v_y.to(cfg.device)
-        v_label = v_label.to(cfg.device)
-
         for ep_i, batch in enumerate(data_loader):
             label, y = batch
             initial = y.repeat(args.frame, 1, 1, 1).permute(
@@ -123,6 +122,7 @@ if __name__ == "__main__":
     parser.add_argument('--o_name', default='adam')
     parser.add_argument('--l_name', default='layer')
     parser.add_argument('--l_layer', type=float, default=0.2)
+    parser.add_argument('--l_symmetric', type=float, default=0.2)
     parser.add_argument('--group', type=int, default=4)
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)

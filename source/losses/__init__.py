@@ -2,6 +2,7 @@ from torch.nn import L1Loss
 
 from losses.layer import LayerLoss
 from losses.mse import MSELoss
+from losses.symmetric import SymmetricLoss
 
 
 def get_loss(cfg):
@@ -15,4 +16,4 @@ def get_loss(cfg):
     elif l_name == 'sparse':
         return SparseLoss()
     elif l_name == 'symetric':
-        return SymmetricLoss()
+        return SymmetricLoss(cfg.l_symmetric)
