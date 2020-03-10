@@ -624,12 +624,13 @@ class NLResAttModuleDownUpPlus(nn.Module):
 # Unet module
 # same convblock (stride=1,kernel_size=3,padding=1)
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, dropout=False, norm='batch', residual=True, activation='leakyrelu', transpose=False):
+    def __init__(self, in_channels, out_channels, dropout=False, norm='batch', residual=True, activation='leakyrelu', transpose=False, gated=False):
         super(ConvBlock, self).__init__()
         self.dropout = dropout
         self.residual = residual
         self.activation = activation
         self.transpose = transpose
+        self.gated = gated
         if self.dropout:
             self.dropout1 = nn.Dropout2d(p=0.05)
             self.dropout2 = nn.Dropout2d(p=0.05)
@@ -649,11 +650,15 @@ class ConvBlock(nn.Module):
                 in_channels, out_channels, kernel_size=3, padding=1)
             self.conv2 = nn.ConvTranspose2d(
                 out_channels, out_channels, kernel_size=3, padding=1)
+        else if self.gated:
+            self.conv1 = GatedConv(in_channels, out_channels, 3)
+            self.conv2 = GatedConv(out_channels, out_channels, 3)
         else:
             self.conv1 = nn.Conv2d(
                 in_channels, out_channels, kernel_size=3, padding=1)
             self.conv2 = nn.Conv2d(
                 out_channels, out_channels, kernel_size=3, padding=1)
+                
         if self.activation == 'relu':
             self.actfun1 = nn.ReLU()
             self.actfun2 = nn.ReLU()

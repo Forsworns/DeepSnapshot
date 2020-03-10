@@ -22,9 +22,6 @@ class SNet(nn.Module):
         self.relu1 = nn.ReLU(inplace=True)
         self.conv3 = conv(n_feat, n_feat, kernel_size)
 
-        padding = kernel_size//2
-        stride = 1
-
         self.limit = nn.Parameter(torch.zeros(1), requires_grad=True)
         self.threshold = lambda x: torch.mul(torch.sign(
             x), nn.functional.relu(torch.abs(x) - self.limit))
