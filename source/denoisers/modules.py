@@ -650,7 +650,7 @@ class ConvBlock(nn.Module):
                 in_channels, out_channels, kernel_size=3, padding=1)
             self.conv2 = nn.ConvTranspose2d(
                 out_channels, out_channels, kernel_size=3, padding=1)
-        else if self.gated:
+        elif self.gated:
             self.conv1 = GatedConv(in_channels, out_channels, 3)
             self.conv2 = GatedConv(out_channels, out_channels, 3)
         else:

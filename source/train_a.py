@@ -29,7 +29,7 @@ def train(label, phi, t_label, t_phi, cfg):
     optimizer = util.get_optimizer(cfg.o_name, model, cfg.learning_rate)
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'min', 0.5, cfg.scheduler)
-    loss_func = get_loss(cfg.l_name)
+    loss_func = get_loss(cfg)
 
     # with writer as w:
     #     dummy_x = torch.zeros_like(label[0].unsqueeze(0))
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     parser.add_argument('--u_name', default='ista')
     parser.add_argument('--d_name', default='snet')
     parser.add_argument('--o_name', default='adam')
-    parser.add_argument('--l_name', default='mse')
+    parser.add_argument('--l_name', default='layer')
     parser.add_argument('--l_layer', type=float, default=0.2)
     parser.add_argument('--group', type=int, default=4)
     parser.add_argument('--frame', type=int, default=8)

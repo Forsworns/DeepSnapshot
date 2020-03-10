@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from denoisers.modules import GatedConv
+from denoisers.modules import GatedConv, ConvBlock
 
 # gated conv
 '''

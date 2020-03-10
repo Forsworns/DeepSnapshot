@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import MSELoss as MSE
 
 class MSELoss(nn.Module):
-    def __init__(self, t):
+    def __init__(self, t=1):
         super(MSELoss, self).__init__()
         self.mse = MSE()
         

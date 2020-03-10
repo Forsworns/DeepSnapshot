@@ -45,16 +45,16 @@ def train(label, phi, t_label, t_phi, cfg):
 
     data_loader = DataLoader(
         dataset, batch_size=cfg.batch, shuffle=True, drop_last=True)
-    data_loader = iter(data_loader)
-    v_label, v_y = next(data_loader)
-    v_initial = v_y.repeat(args.frame, 1, 1, 1).permute(
-        1, 0, 2, 3).mul(phi.cpu()).div(phi.cpu().sum(0)+0.0001)
-    v_initial = v_initial.to(cfg.device)
-    v_y = v_y.to(cfg.device)
-    v_label = v_label.to(cfg.device)
     for ep in range(cfg.epoch):
         optimizer.zero_grad()
-        for ep_i, batch in enumerate(data_loader):
+        dl = iter(data_loader)
+        v_label, v_y = next(dl)
+        v_initial = v_y.repeat(args.frame, 1, 1, 1).permute(
+            1, 0, 2, 3).mul(phi.cpu()).div(phi.cpu().sum(0)+0.0001)
+        v_initial = v_initial.to(cfg.device)
+        v_y = v_y.to(cfg.device)
+        v_label = v_label.to(cfg.device)
+        for ep_i, batch in enumerate(dl):
             label, y = batch
             initial = y.repeat(args.frame, 1, 1, 1).permute(
                 1, 0, 2, 3).mul(phi.cpu()).div(phi.cpu().sum(0)+0.0001)
