@@ -94,7 +94,7 @@ def train(label, phi, t_label, t_phi, cfg):
 
     t_phi = t_phi.to(cfg.device)
     data_loader = DataLoader(
-        t_dataset, batch_size=t_label.shape[0], shuffle=True)
+        t_dataset, batch_size=t_label.shape[0], shuffle=False)
     label, y = next(iter(data_loader))
     initial = y.repeat(args.frame, 1, 1, 1).permute(
         1, 0, 2, 3).mul(t_phi.cpu()).div(t_phi.cpu().sum(0)+0.0001)

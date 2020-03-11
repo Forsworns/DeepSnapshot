@@ -18,7 +18,7 @@ class GatedConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, bias=True):
         super(GatedConv, self).__init__()
         self.conv = default_conv(in_channels, out_channels, kernel_size, bias)
-        self.act1 = nn.ReLU()
+        self.act1 = nn.SELU()
         self.gate = default_conv(in_channels, out_channels, kernel_size, bias)
         self.act2 = nn.Sigmoid()
 
@@ -624,7 +624,7 @@ class NLResAttModuleDownUpPlus(nn.Module):
 # Unet module
 # same convblock (stride=1,kernel_size=3,padding=1)
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, dropout=False, norm='batch', residual=True, activation='leakyrelu', transpose=False, gated=False):
+    def __init__(self, in_channels, out_channels, dropout=False, norm='batch', residual=True, activation='selu', transpose=False, gated=False):
         super(ConvBlock, self).__init__()
         self.dropout = dropout
         self.residual = residual

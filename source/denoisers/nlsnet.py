@@ -1,12 +1,12 @@
 import torch.nn as nn
 
 from denoisers.modules import (DownSampler, NLResGroup, ResBlock, ResGroup,
-                               UpSampler, default_conv)
+                               UpSampler, default_conv, GatedConv)
 
 
 # NL scale
 class NlsNet(nn.Module):
-    def __init__(self, channel, features=16, conv=default_conv):
+    def __init__(self, channel, features=16, conv=GatedConv):
         super(NlsNet, self).__init__()
         kernel_size = 3
         layers = []
