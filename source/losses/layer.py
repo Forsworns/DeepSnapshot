@@ -3,9 +3,9 @@ import torch.nn as nn
 from torch.nn import MSELoss
 
 class LayerLoss(nn.Module):
-    def __init__(self, t_layer):
+    def __init__(self, cfg):
         super(LayerLoss, self).__init__()
-        self.t = t_layer
+        self.t = cfg.l_layer
         self.mse = MSELoss()
 
     def forward(self, layers, truth):

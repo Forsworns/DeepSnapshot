@@ -9,7 +9,7 @@ class Gap(nn.Module):
         self.step_size = step_size
 
     def forward(self, *params):
-        x, y, phi, delta_y = params
+        x, y, phi, _, delta_y = params
         y_t = x.mul(phi).sum(1)
         frame = phi.shape[0]
         phi_sum = phi.sum(0)
@@ -21,8 +21,8 @@ class Gap(nn.Module):
         # residual = (y-y_t).repeat(frame,1,1,1).permute(1,0,2,3)
         # delta_x = self.step_size*residual.mul(phi.detach()).div(phi_sum+0.0001)
         x = x + delta_x
-        x = self.denoiser(x)
-        return x, y, phi, delta_y
+        x, symmetric = self.denoiser(x)
+        return x, y, phi, symmetric
 
     def initialize(self, phi, cfg):
         delta_y = torch.zeros(phi.shape[1], phi.shape[2], device=cfg.device)

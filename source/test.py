@@ -29,31 +29,8 @@ def test_e2e(label, phi, cfg):
         print(sum(p.numel() for p in model.parameters() if p.requires_grad))
         model.load_state_dict(torch.load(cfg.restore))
         model.eval()
-        layers = model(initial, y, phi)
+        layers, _ = model(initial, y, phi)
         return layers[-1]
-
-
-def test_iterative(label, phi, cfg):
-    y = label.mul(phi).sum(1)
-    initial = y.repeat(args.frame, 1, 1, 1).permute(
-        1, 0, 2, 3).mul(phi).div(phi.sum(0)+0.0001)
-    phi = phi.to(cfg.device)
-    initial = initial.to(cfg.device)
-    y = y.to(cfg.device)
-    with torch.no_grad():
-        denoiser = get_denoiser(cfg.d_name, cfg.frame)
-        denoiser.load_state_dict(torch.load(cfg.restore))
-        denoiser.eval()
-        denoiser.to(cfg.device)
-        updater = get_updater(cfg.u_name, phi, denoiser, cfg.step_size)
-        updater.to(cfg.device)
-        params = [initial, y]
-        params.extend(updater.initialize())
-        for sp in range(cfg.steps):
-            params = updater(*params)
-            print("sp ", sp, "PSNR ", compare_psnr(label.numpy(),
-                                                   np.clip(params[0].detach().cpu().numpy(), 0, 1)))
-        return params[0]
 
 
 if __name__ == "__main__":
@@ -92,7 +69,7 @@ if __name__ == "__main__":
     # util.show_tensors(label)
 
     start = time()
-    reconstruction = args.tester(label, phi, args)
+    reconstruction = test_e2e(label, phi, args)
     end = time()
 
     reconstruction = np.clip(reconstruction.detach().cpu().numpy(), 0, 1)

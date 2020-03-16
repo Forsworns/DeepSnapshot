@@ -62,9 +62,9 @@ def train(label, phi, t_label, t_phi, cfg):
             y = y.to(cfg.device)
             label = label.to(cfg.device)
             model.train()
-            layers = model(initial, y, phi)
+            layers, symmetric = model(initial, y, phi)
             net_output = layers[-1]
-            loss = loss_func(layers, label)
+            loss = loss_func(layers, label,symmetric)
             loss.backward()
             if (ep_i+1) % accumulation_steps == 0:
                 print("ep", ep, "ep_i ", ep_i, "loss ", loss.item())
@@ -74,9 +74,9 @@ def train(label, phi, t_label, t_phi, cfg):
         with torch.no_grad():
             losses.append(loss.item())
             model.eval()
-            v_layers = model(v_initial, v_y, phi)
+            v_layers, symmetric = model(v_initial, v_y, phi)
             net_output = v_layers[-1]
-            val_loss = loss_func(v_layers, v_label)
+            val_loss = loss_func(v_layers, v_label, symmetric)
             scheduler.step(val_loss)
             val_loss = val_loss.item()
             val_losses.append(val_loss)
@@ -120,9 +120,9 @@ if __name__ == "__main__":
     parser.add_argument('--u_name', default='ista')
     parser.add_argument('--d_name', default='snet')
     parser.add_argument('--o_name', default='adam')
-    parser.add_argument('--l_name', default='layer')
-    parser.add_argument('--l_layer', type=float, default=0.2)
-    parser.add_argument('--l_symmetric', type=float, default=0.2)
+    parser.add_argument('--l_name', default='symmetric')
+    parser.add_argument('--l_layer', type=float, default=0)
+    parser.add_argument('--l_symmetric', type=float, default=0.01)
     parser.add_argument('--group', type=int, default=4)
     parser.add_argument('--frame', type=int, default=8)
     parser.add_argument('--pixel', type=int, default=256)

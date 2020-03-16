@@ -199,14 +199,13 @@ class ContextualAttention(nn.Module):
         self.softmax_scale = softmax_scale
         self.fuse = fuse
 
-    def forward(self, f, b, mask=None):
+    def forward(self, f, b):
         """ Contextual attention layer implementation.
         Contextual attention is first introduced in publication:
             Generative Image Inpainting with Contextual Attention, Yu et al.
         Args:
             f: Input feature to match (foreground).
             b: Input feature for match (background).
-            mask: Input mask for b, indicating patches not available.
             ksize: Kernel size for contextual attention.
             stride: Stride for extracting patches from b.
             rate: Dilation for matching.
@@ -249,28 +248,6 @@ class ContextualAttention(nn.Module):
         w = w.view(int_bs[0], int_bs[1], self.ksize, self.ksize, -1)
         w = w.permute(0, 4, 1, 2, 3)    # w shape: [N, L, C, k, k]
         w_groups = torch.split(w, 1, dim=0)
-
-        # process mask
-        if mask is None:
-            mask = torch.zeros([int_bs[0], 1, int_bs[2], int_bs[3]])
-            mask = mask.to(device)
-        else:
-            mask = F.interpolate(mask, scale_factor=1. /
-                                 (4*self.rate), mode='nearest')
-        int_ms = list(mask.size())
-        # m shape: [N, C*k*k, L]
-        m = extract_image_patches(mask, ksizes=[self.ksize, self.ksize],
-                                  strides=[self.stride, self.stride],
-                                  rates=[1, 1],
-                                  padding='same')
-        # m shape: [N, C, k, k, L]
-        m = m.view(int_ms[0], int_ms[1], self.ksize, self.ksize, -1)
-        m = m.permute(0, 4, 1, 2, 3)    # m shape: [N, L, C, k, k]
-        m = m[0]    # m shape: [L, C, k, k]
-        # mm shape: [L, 1, 1, 1]
-        mm = (reduce_mean(m, axis=[1, 2, 3], keepdim=True) == 0.).to(
-            torch.float32)
-        mm = mm.permute(1, 0, 2, 3)  # mm shape: [1, L, 1, 1]
 
         y = []
         offsets = []
@@ -322,9 +299,7 @@ class ContextualAttention(nn.Module):
             # (B=1, C=32*32, H=32, W=32)
             yi = yi.view(1, int_bs[2] * int_bs[3], int_fs[2], int_fs[3])
             # softmax to match
-            yi = yi * mm
             yi = F.softmax(yi*scale, dim=1)
-            yi = yi * mm  # [1, L, H, W]
 
             offset = torch.argmax(yi, dim=1, keepdim=True)  # 1*1*H*W
 
@@ -347,10 +322,10 @@ class ContextualAttention(nn.Module):
         y = torch.cat(y, dim=0)  # back to the mini-batch
         y.contiguous().view(raw_int_fs)
 
-        offsets = torch.cat(offsets, dim=0)
-        offsets = offsets.view(int_fs[0], 2, *int_fs[2:])
+        # offsets = torch.cat(offsets, dim=0)
+        # offsets = offsets.view(int_fs[0], 2, *int_fs[2:])
 
-        return y, offsets
+        return y
 
 # RNAN modules
 # residual attention + downscale upscale + denoising

@@ -9,9 +9,9 @@ class Plain(nn.Module):
         self.step_size = step_size
 
     def forward(self, *params):
-        x, y, phi = params
-        x = self.denoiser(x)
-        return x, y, phi
+        x, y, phi, _ = params
+        x, symmetric = self.denoiser(x)
+        return x, y, phi, symmetric
 
     def initialize(self, phi, cfg):
         return []

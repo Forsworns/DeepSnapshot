@@ -32,9 +32,11 @@ class End2end(nn.Module):
 
     def forward(self, x, y, phi):
         layers = []
-        params = [x, y, phi]
+        symmetric = []
+        params = [x, y, phi, None]
         params.extend(self.initial_params)
         for l in self.layers:
             params = l(*params)
             layers.append(params[0])
+            symmetric.append(params[3])
         return layers

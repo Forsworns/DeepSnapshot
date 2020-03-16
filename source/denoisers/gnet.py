@@ -4,7 +4,6 @@ import torch.nn as nn
 from denoisers.modules import GatedConv, ConvBlock
 
 # gated conv
-'''
 class GNet(nn.Module):
     def __init__(self, channel, conv=GatedConv, **kwgs):
         super(GNet, self).__init__()
@@ -31,21 +30,23 @@ class GNet(nn.Module):
     def forward(self, x):
         ox = x
         x = self.conv1(x)
+        orig = x
         x = self.conv2(x)
-        # x = self.relu1(x)
-        x = nn.selu(x)
+        x = self.relu1(x)
         x = self.conv3(x)
+        coeff = x
         x = self.threshold(x)
         x = self.deconv1(x)
-        x = nn.selu(x)
-        # x = self.relu2(x)
+        x = self.relu2(x)
         x = self.deconv2(x)
         x = self.deconv3(x)
-        x = ox + x
-        return x
+        # x = ox + x
+        symm = self.deconv1(coeff)
+        symm = self.relu2(symm)
+        symm = self.deconv2(symm) 
+        return x, symm
 
 '''
-
 class GNet(nn.Module):
     def __init__(self, channel, residual=True, down='conv', up='tconv', activation='selu'):
         super(GNet, self).__init__()
@@ -133,3 +134,4 @@ class GNet(nn.Module):
             x = torch.add(x, self.convres(c0))
 
         return x
+        '''

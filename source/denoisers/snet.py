@@ -34,13 +34,18 @@ class SNet(nn.Module):
     def forward(self, x):
         ox = x
         x = self.conv1(x)
+        orig = x
         x = self.conv2(x)
         x = self.relu1(x)
         x = self.conv3(x)
+        coeff = x
         x = self.threshold(x)
         x = self.deconv1(x)
         x = self.relu2(x)
         x = self.deconv2(x)
         x = self.deconv3(x)
-        x = ox + x
-        return x
+        # x = ox + x
+        symm = self.deconv1(coeff)
+        symm = self.relu2(symm)
+        symm = self.deconv2(symm) 
+        return x, symm

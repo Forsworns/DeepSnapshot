@@ -69,7 +69,7 @@ class CoarseGenerator(nn.Module):
         x = self.conv16(x)
         x = self.conv17(x)
         # 3 x 256 x 256
-        x_stage1 = torch.clamp(x, -1., 1.)
+        x_stage1 = torch.clamp(x, 0, 1.)
 
         return x_stage1
 
@@ -135,7 +135,8 @@ class FineGenerator(nn.Module):
         x = self.pmconv4_downsample(x)
         x = self.pmconv5(x)
         x = self.pmconv6(x)
-        x, offset_flow = self.contextul_attention(x, x)
+        x, _ = self.contextul_attention(x, x)
+        # x, offset_flow = self.contextul_attention(x, x)
         x = self.pmconv9(x)
         x = self.pmconv10(x)
         pm = x
@@ -150,6 +151,6 @@ class FineGenerator(nn.Module):
         x = self.allconv15(x)
         x = self.allconv16(x)
         x = self.allconv17(x)
-        x_stage2 = torch.clamp(x, -1., 1.)
+        x_stage2 = torch.clamp(x, 0, 1.)
 
-        return x_stage2, offset_flow
+        return x_stage2, symmetric
