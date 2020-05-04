@@ -7,7 +7,7 @@ from torch.autograd import Variable
 from torch.nn.utils import spectral_norm as spectral_norm_fn
 from torch.nn.utils import weight_norm as weight_norm_fn
 
-
+# same padding conv with kernel 3x3 stride 1
 def default_conv(in_channels, out_channels, kernel_size, bias=True):
     return nn.Conv2d(
         in_channels, out_channels, kernel_size,

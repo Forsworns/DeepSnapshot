@@ -1,5 +1,6 @@
 import sys
 
+import torch
 import torch.nn as nn
 
 from utils import util
@@ -12,7 +13,7 @@ class Fista(nn.Module):
         super(Fista, self).__init__()
         self.denoiser = denoiser
         self.step_size = step_size
-        self.t = nn.Parameter(torch.zeros(1), requires_grad=True)
+        self.t = nn.Parameter(torch.ones(1), requires_grad=True)
 
     def forward(self, *params):
         last_x, y, phi, _ = params

@@ -1,0 +1,10 @@
+# python cache
+__pycache__
+*/__pycache__
+
+#trainning data
+data/train
+results
+source/runs
+
+remark.txt

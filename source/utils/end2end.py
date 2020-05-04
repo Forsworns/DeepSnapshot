@@ -18,12 +18,12 @@ class End2end(nn.Module):
         if cfg.share:
             denoiser = get_denoiser(cfg.d_name, channels)
             for _ in range(cfg.phase):
-                step_size = nn.Parameter(torch.zeros(1), requires_grad=True)
+                step_size = nn.Parameter(0.1*torch.ones(1), requires_grad=True)
                 updater = get_updater(cfg.u_name, denoiser, step_size)
                 self.layers.append(updater)
         else:
             for _ in range(cfg.phase):
-                step_size = nn.Parameter(torch.zeros(1), requires_grad=True)
+                step_size = nn.Parameter(0.1*torch.ones(1), requires_grad=True)
                 denoiser = get_denoiser(cfg.d_name, channels)
                 updater = get_updater(cfg.u_name, denoiser, step_size)
                 self.layers.append(updater)
@@ -39,4 +39,4 @@ class End2end(nn.Module):
             params = l(*params)
             layers.append(params[0])
             symmetric.append(params[3])
-        return layers
+        return layers, symmetric

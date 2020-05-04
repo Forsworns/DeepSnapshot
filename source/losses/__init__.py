@@ -15,5 +15,5 @@ def get_loss(cfg):
         return LayerLoss(cfg)
     elif l_name == 'sparse':
         return SparseLoss()
-    elif l_name == 'symetric':
+    elif l_name == 'symmetric':
         return SymmetricLoss(cfg)

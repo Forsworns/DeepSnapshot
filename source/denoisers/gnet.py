@@ -40,7 +40,7 @@ class GNet(nn.Module):
         x = self.relu2(x)
         x = self.deconv2(x)
         x = self.deconv3(x)
-        # x = ox + x
+        x = ox + x
         symm = self.deconv1(coeff)
         symm = self.relu2(symm)
         symm = self.deconv2(symm) 

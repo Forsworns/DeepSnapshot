@@ -9,9 +9,9 @@ def general(name):
     train_file = root_dir + 'data/train/train%s%d.mat' % (name, pixel)
     test_file = root_dir + 'data/test/test%s%d.mat' % (name, pixel)
     mask_file = root_dir + 'data/mask%d.mat' % (pixel)
-    para_dir = root_dir + 'results/parameter/Para%s%d' % (name, pixel)
-    recon_dir = root_dir + 'results/reconstruction/Img%s%d' % (name, pixel)
-    model_dir = root_dir + 'results/model/Model%s%d' % (name, pixel)
+    para_dir = root_dir + 'results/parameter/Para%s%d/%d' % (name, pixel)
+    recon_dir = root_dir + 'results/reconstruction/Img%s%d/%d' % (name, pixel,int(time()))
+    model_dir = root_dir + 'results/model/Model%s%d/%d' % (name, pixel,int(time()))
     if not os.path.exists(para_dir):
         os.makedirs(para_dir)
     if not os.path.exists(recon_dir):
